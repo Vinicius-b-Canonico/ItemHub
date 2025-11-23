@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: market_db
+    restart: always
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: .
+    container_name: market_backend
+    restart: always
+    env_file: .env
+    depends_on:
+      - db
+    ports:
+      - "5887:5887"
+    volumes:
+      - .:/app
+      - ./uploads:/app/uploads
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 15 &&
+        flask db upgrade || (flask db init &&
+        flask db migrate -m 'initial migration' &&
+        flask db upgrade) &&
+        flask run --host=0.0.0.0 --port=5887
+      "
+
+  frontend:
+    build: ../frontend
+    container_name: market_frontend
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    volumes:
+      - ../frontend:/usr/share/nginx/html:ro
+
+volumes:
+  pg_data:

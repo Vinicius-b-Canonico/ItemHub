@@ -1,0 +1,19 @@
+# IDEs
+.idea/
+.vscode/
+
+# Python / Flask
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Alembic migrations 
+backend/migrations/
+# Alembic migrations 
+backend/uploads/
+
+# commented out to allow easier initial setup from this github repo, as this will never reach production.
+# Environment files
+#.env
+#*.env

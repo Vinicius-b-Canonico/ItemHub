@@ -1,0 +1,11 @@
+body {
+  background-color: #f5f6f8;
+}
+
+.card {
+  border-radius: 10px;
+}
+
+.btn-primary {
+  font-weight: 500;
+}

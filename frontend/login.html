@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login - Trade Platform</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">  
+  <link href="css/auth.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <div class="container mt-5" style="max-width: 420px;">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h3 class="text-center mb-4">Welcome Back</h3>
+
+        <form id="loginForm">
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" placeholder="Enter your username" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Login</button>
+        </form>
+
+        <div class="text-center mt-3">
+          <a href="register.html" class="text-decoration-none">Don’t have an account? Register</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="alertContainer" class="mt-3"></div>
+  </div>
+  <!-- Global modal placeholder -->
+  <div id="resultModalsContainer"></div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="js/pages/loginPage.js"></script>
+</body>
+</html>
