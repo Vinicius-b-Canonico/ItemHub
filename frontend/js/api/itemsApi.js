@@ -8,11 +8,10 @@ const VERBOSE = true;
 function v(...args) {
   if (VERBOSE) console.log("[ITEMS API DEBUG]", ...args);
 }
-
 // ======================================================
 // POST /api/items/ - Create Item
 // ======================================================
-export async function createItem(
+export async function createItem({
   title,
   category,
   duration_days,
@@ -20,8 +19,9 @@ export async function createItem(
   offer_type = "free",
   volume = null,
   location = "",
-  image = null
-) {
+  mainImage = null,      // single main image
+  extraImages = []       // array of File objects for additional images
+}) {
   v("createItem() called with:", {
     title,
     category,
@@ -30,23 +30,151 @@ export async function createItem(
     offer_type,
     volume,
     location,
-    image,
+    mainImage,
+    extraImages,
   });
 
   const formData = new FormData();
   formData.append("title", title);
   formData.append("category", category);
   formData.append("duration_days", duration_days);
+
   if (description) formData.append("description", description);
   if (offer_type) formData.append("offer_type", offer_type);
   if (volume !== null) formData.append("volume", volume);
   if (location) formData.append("location", location);
-  if (image) formData.append("image", image);
 
-  v("createItem() final FormData content:", formData);
+  // Main image 
+  if (mainImage) {
+    formData.append("image", mainImage);
+  }
+
+  // NEW: Extra images
+  if (extraImages && Array.isArray(extraImages)) {
+    extraImages.forEach((file) => formData.append("images", file));
+  }
+
+  v("createItem() final FormData:", formData);
 
   return apiFormRequest("/items/", "POST", formData);
 }
+
+// ======================================================
+// PUT /api/items/<id> - Update Item 
+// ======================================================
+export async function updateItem(
+  item_id,
+  {
+    title,
+    description,
+    category,
+    offer_type,
+    volume,
+    location,
+    duration_days,
+    mainImage = null,      // replaces item.image_url
+    extraImages = [],      // adds new extra images
+    deleteImageIds = [],   // array of IDs to remove from DB
+    new_image_order = []     // array of IDs in final sorted order
+  } = {}
+) {
+  v("updateItem() called with:", {
+    item_id,
+    title,
+    description,
+    category,
+    offer_type,
+    volume,
+    location,
+    duration_days,
+    mainImage,
+    extraImages,
+    deleteImageIds,
+    new_image_order,
+  });
+  const needsFormData =
+    mainImage ||
+    (extraImages && extraImages.length > 0) ||
+    (deleteImageIds && deleteImageIds.length > 0) ||
+    (new_image_order && new_image_order.length > 0);
+
+  if (needsFormData) {
+    v("updateItem(): using FormData because images/reordering involved");
+
+    const formData = new FormData();
+
+    if (title) formData.append("title", title);
+    if (description) formData.append("description", description);
+    if (category) formData.append("category", category);
+    if (offer_type) formData.append("offer_type", offer_type);
+    if (volume !== undefined && volume !== null) formData.append("volume", volume);
+    if (location) formData.append("location", location);
+    if (duration_days) formData.append("duration_days", duration_days);
+
+    // MAIN IMAGE
+    if (mainImage) {
+      formData.append("image", mainImage);
+    }
+
+    // NEW IMAGES
+    if (extraImages && Array.isArray(extraImages)) {
+      extraImages.forEach((file) => formData.append("images", file));
+    }
+
+    // DELETE IMAGES
+    if (deleteImageIds && Array.isArray(deleteImageIds)) {
+      deleteImageIds.forEach((id) => formData.append("delete_image_ids", id));
+    }
+
+    // NEW: SEND ORDERING INSTRUCTION
+    if (new_image_order) {
+      formData.append("new_image_order", new_image_order);
+    }
+
+    v("updateItem() FormData:", formData);
+    return apiFormRequest(`/items/${item_id}`, "PUT", formData);
+  }
+
+  // JSON fallback
+  v("updateItem(): sending JSON body since no images were involved");
+
+  const body = {};
+  if (title) body.title = title;
+  if (description) body.description = description;
+  if (category) body.category = category;
+  if (offer_type) body.offer_type = offer_type;
+  if (volume !== undefined && volume !== null) body.volume = volume;
+  if (location) body.location = location;
+  if (duration_days) body.duration_days = duration_days;
+
+  v("Final JSON body:", body);
+
+  return apiRequest(`/items/${item_id}`, true, {
+    method: "PUT",
+    body,
+  });
+}
+
+
+// ======================================================
+// POST /api/items/<id>/images - Upload ONE image
+// ======================================================
+export async function uploadItemImage(item_id, file) {
+  v("uploadItemImage() called with:", { item_id, file });
+
+  if (!file) {
+    throw new Error("No file provided to uploadItemImage()");
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  v("uploadItemImage() FormData:", formData);
+
+  // Uses the same form-based helper used in updateItem
+  return apiFormRequest(`/items/${item_id}/images`, "POST", formData);
+}
+
 
 // ======================================================
 // GET /api/items/ - List Items (Paginated)
@@ -86,73 +214,6 @@ export async function getItem(item_id) {
   return apiGet(`/items/${item_id}`);
 }
 
-
-// ======================================================
-// PUT /api/items/<id> - Update Item
-// ======================================================
-export async function updateItem(
-  item_id,
-  {
-    title,
-    description,
-    category,
-    offer_type,
-    volume,
-    location,
-    duration_days,
-    image = null,
-  } = {}
-) {
-  v("updateItem() called with:", {
-    item_id,
-    title,
-    description,
-    category,
-    offer_type,
-    volume,
-    location,
-    duration_days,
-    image,
-  });
-
-  // If updating image, use FormData
-  if (image) {
-    v("updateItem(): using FormData because image was provided");
-
-    const formData = new FormData();
-    if (title) formData.append("title", title);
-    if (description) formData.append("description", description);
-    if (category) formData.append("category", category);
-    if (offer_type) formData.append("offer_type", offer_type);
-    if (volume !== undefined && volume !== null) formData.append("volume", volume);
-    if (location) formData.append("location", location);
-    if (duration_days) formData.append("duration_days", duration_days);
-    formData.append("image", image);
-
-    v("updateItem() FormData:", formData);
-
-    return apiFormRequest(`/items/${item_id}`, "PUT", formData);
-  }
-
-  // Otherwise, send JSON
-  v("updateItem(): sending JSON body instead of FormData");
-
-  const body = {};
-  if (title) body.title = title;
-  if (description) body.description = description;
-  if (category) body.category = category;
-  if (offer_type) body.offer_type = offer_type;
-  if (volume !== undefined && volume !== null) body.volume = volume;
-  if (location) body.location = location;
-  if (duration_days) body.duration_days = duration_days;
-
-  v("Final JSON body:", body);
-
-  return apiRequest(`/items/${item_id}`,  true, {
-    method: "PUT",
-    body,
-  });
-}
 
 // ======================================================
 // DELETE /api/items/<id> - Delete Item
