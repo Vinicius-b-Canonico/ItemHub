@@ -80,7 +80,6 @@ export async function loadNavbar() {
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="/profile.html">Profile</a></li>
-                <li><a class="dropdown-item" href="/notifications.html">Notifications</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><button id="logoutBtn" class="dropdown-item text-danger">Logout</button></li>
               </ul>
