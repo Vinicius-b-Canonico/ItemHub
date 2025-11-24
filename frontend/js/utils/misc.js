@@ -4,8 +4,15 @@ export function normalizeImageUrl(imageUrl) {
     if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
       return imageUrl;
     }
-    // If it’s already using the backend route, return as-is
-    if (imageUrl.startsWith("/items/image/")) {
+
+    //need to remove the /api part before adding the base url prefix.
+    if (imageUrl.startsWith("/api/items/image/")) {
+      const cleaned = imageUrl.replace(/^\/api/, "");
+      return `${API_BASE_URL}${cleaned}`;
+    }
+
+    // If it’s already using the backend route, return as-is with base url prefix.
+    if ( imageUrl.startsWith("/items/image/")) {
       return `${API_BASE_URL}${imageUrl}`;
     }
     // Otherwise, assume it’s a filename and prepend the full image route

@@ -91,7 +91,8 @@ def create_item():
         img = ItemImage(
             item_id=item.id,
             image_url=f"/items/image/{filename}",
-            position=idx
+            position=idx,
+            enabled=True
         )
         db.session.add(img)
 
@@ -173,6 +174,7 @@ def update_item(item_id):
             for pos, img_id in enumerate(order_list):
                 if img_id in img_map:
                     img_map[img_id].position = pos
+                    img_map[img_id].enabled = True
 
             # Any images NOT included get placed after the ordered list
             tail_position = len(order_list)
@@ -217,7 +219,8 @@ def update_item(item_id):
                 ItemImage(
                     item_id=item.id,
                     image_url=f"/items/image/{filename}",
-                    position=start_pos + i
+                    position=start_pos + i,
+                    enabled=True
                 )
             )
 

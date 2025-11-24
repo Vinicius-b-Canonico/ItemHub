@@ -40,7 +40,6 @@ async function loadUserItems(currentUser) {
       <div class="text-muted text-center py-4">Loading your items...</div>
     `;
 
-    console.log("will list items of user id: " + currentUser.id);
     const { items } = await listItems({
       category: "",
       owner_id: currentUser.id,

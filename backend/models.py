@@ -41,7 +41,7 @@ class ItemImage(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey("items.id"), nullable=False)
     image_url = db.Column(db.String(200), nullable=False)
     position = db.Column(db.Integer, default=0)
-    enabled = db.Column(db.Boolean, default=False, nullable=False)
+    enabled = db.Column(db.Boolean, default=True, nullable=False)
 
     def __repr__(self):
         return f"<ItemImage {self.id} for Item {self.item_id}>"
