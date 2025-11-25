@@ -123,11 +123,15 @@ def update_item(item_id):
     if not user:
         return jsonify({"error": "not properly logged in"}), 401
 
-    item: Item = Item.get_by_id(item_id)
+    item:Item = Item.get_by_id(item_id)
     if not item:
         return jsonify({"error": "item not found"}), 404
     if item.owner_id != user_id:
         return jsonify({"error": "Not authorized"}), 403
+    if not item.status in ["ativo"]:
+        if item.status in ["cancelado"]:
+            return jsonify({"error": "este item foi permanentemente cancelado."}), 410
+        return jsonify({"error": "o status deste item não permite mudanças"}), 404
 
     data = request.form or request.get_json() or {}
 

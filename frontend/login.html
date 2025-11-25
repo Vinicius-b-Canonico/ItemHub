@@ -1,44 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>Login - Trade Platform</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar – ItemHub</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">  
-  <link href="css/auth.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="../css/style.css">
 </head>
-<body class="bg-light">
-  <div class="container mt-5" style="max-width: 420px;">
-    <div class="card shadow-sm">
+<body>
+
+  <!-- Navbar -->
+  <div id="navbarContainer"></div>
+
+  <div class="container d-flex align-items-center justify-content-center min-vh-100">
+    <div class="card shadow-lg border-0 rounded-4 p-4" style="max-width:420px">
       <div class="card-body">
-        <h3 class="text-center mb-4">Welcome Back</h3>
+        <h3 class="text-center mb-4 fw-bold">Bem-vindo de Volta</h3>
 
         <form id="loginForm">
-          <div class="mb-3">
-            <label class="form-label">Username</label>
-            <input type="text" name="username" class="form-control" placeholder="Enter your username" required>
+          <div class="mb-4">
+            <label class="form-label fw-medium">Usuário</label>
+            <input type="text" name="username" class="form-control form-control-lg" placeholder="Seu nome de usuário" required>
           </div>
 
-          <div class="mb-3">
-            <label class="form-label">Password</label>
-            <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+          <div class="mb-4">
+            <label class="form-label fw-medium">Senha</label>
+            <input type="password" name="password" class="form-control form-control-lg" placeholder="Sua senha" required>
           </div>
 
-          <button type="submit" class="btn btn-primary w-100">Login</button>
+          <button type="submit" class="btn btn-primary btn-lg w-100 fw-medium">Entrar</button>
         </form>
 
-        <div class="text-center mt-3">
-          <a href="register.html" class="text-decoration-none">Don’t have an account? Register</a>
-        </div>
+        <p class="text-center mt-4 text-muted">
+          Não tem conta? <a href="register.html" class="text-primary fw-medium text-decoration-none">Criar conta</a>
+        </p>
       </div>
     </div>
 
-    <div id="alertContainer" class="mt-3"></div>
+    <div id="alertContainer" class="position-fixed top-0 start-50 translate-middle-x mt-5 w-100" style="max-width:420px;z-index:1050"></div>
   </div>
-  <!-- Global modal placeholder -->
+
+  <!-- Modals -->
   <div id="resultModalsContainer"></div>
-  
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" src="js/pages/loginPage.js"></script>
+  <script type="module" src="../js/pages/loginPage.js"></script>
 </body>
 </html>

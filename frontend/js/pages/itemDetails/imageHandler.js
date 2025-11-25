@@ -24,11 +24,17 @@ export function getImageAt(index, imageState) {
   }
 }
 
-export function renderAllImages(imageState, imageElements, mode) {
+export function renderAllImages(imageState, imageElements, mode, isEditable) {
   const count = combinedCount(imageState);
   if (count === 0) {
     imageElements.mainImageEl.classList.add("d-none");
     imageElements.noImagePlaceholder.classList.remove("d-none");
+    imageElements.noImagePlaceholder.innerHTML = isEditable ? `
+      <div class="text-center py-4">
+        <i class="bi bi-cloud-upload fs-1 text-muted mb-3"></i>
+        <p class="text-muted">Arraste imagens aqui ou clique para adicionar</p>
+      </div>
+    ` : "Sem imagens disponíveis";
     imageElements.prevBtn.classList.add("disabled");
     imageElements.nextBtn.classList.add("disabled");
     imageElements.thumbnailsEl.innerHTML = "";
@@ -62,51 +68,46 @@ function renderThumbnails(imageState, imageElements, mode) {
   for (let i = 0; i < total; i++) {
     const img = getImageAt(i, imageState);
     const div = document.createElement("div");
-    div.className = "thumb";
-    if (i === imageState.currentIndex) div.classList.add("active");
-    div.style.position = "relative";
+    div.className = "thumb shadow-sm hover-shadow rounded-3";
+    if (i === imageState.currentIndex) div.classList.add("border-primary", "border-2");
 
-    const isEditable = mode === "edit" || mode === "create";
+    const isEditableLocal = mode === "edit" || mode === "create";
 
-    if (isEditable) {
-      div.classList.add("edit-mode");
+    if (isEditableLocal) {
       div.draggable = true;
       div.dataset.index = i;
 
       div.addEventListener("dragstart", (e) => {
         dragSrcIndex = parseInt(e.currentTarget.dataset.index);
         e.dataTransfer.effectAllowed = "move";
-        div.classList.add("dragging");
+        div.classList.add("opacity-50");
       });
 
-      div.addEventListener("dragend", () => div.classList.remove("dragging"));
+      div.addEventListener("dragend", () => div.classList.remove("opacity-50"));
 
       div.addEventListener("dragover", (e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
-        div.classList.add("drag-over");
+        div.classList.add("border-primary");
       });
 
-      div.addEventListener("dragleave", () => div.classList.remove("drag-over"));
+      div.addEventListener("dragleave", () => div.classList.remove("border-primary"));
 
       div.addEventListener("drop", (e) => {
         e.preventDefault();
-        div.classList.remove("drag-over");
+        div.classList.remove("border-primary");
 
         const dropIndex = parseInt(e.currentTarget.dataset.index);
         if (dropIndex === dragSrcIndex) return;
 
         reorderImages(dragSrcIndex, dropIndex, imageState);
 
-        renderAllImages(imageState, imageElements, mode);
+        renderAllImages(imageState, imageElements, mode, isEditableLocal);
       });
 
       const dragHandle = document.createElement("div");
-      dragHandle.className = "drag-handle";
-      dragHandle.innerHTML = `<i class="bi bi-arrows-move"></i>`;
-      dragHandle.style.position = "absolute";
-      dragHandle.style.top = "5px";
-      dragHandle.style.left = "5px";
+      dragHandle.className = "position-absolute top-0 start-0 p-1 bg-white rounded shadow-sm";
+      dragHandle.innerHTML = `<i class="bi bi-arrows-move text-muted"></i>`;
       div.appendChild(dragHandle);
     }
 
@@ -117,14 +118,11 @@ function renderThumbnails(imageState, imageElements, mode) {
     im.style.objectFit = "cover";
     div.appendChild(im);
 
-    if (isEditable) {
+    if (isEditableLocal) {
       const delBtn = document.createElement("button");
       delBtn.type = "button";
-      delBtn.className = "del-btn btn btn-sm btn-outline-danger";
+      delBtn.className = "position-absolute bottom-0 end-0 btn btn-sm btn-danger rounded-circle p-1";
       delBtn.innerHTML = `<i class="bi bi-trash"></i>`;
-      delBtn.style.position = "absolute";
-      delBtn.style.bottom = "5px";
-      delBtn.style.right = "5px";
       div.appendChild(delBtn);
 
       delBtn.addEventListener("click", (e) => {
@@ -145,35 +143,31 @@ function renderThumbnails(imageState, imageElements, mode) {
           imageState.currentIndex = Math.max(0, combinedCount(imageState) - 1);
         }
 
-        renderAllImages(imageState, imageElements, mode);
+        renderAllImages(imageState, imageElements, mode, isEditableLocal);
       });
     }
 
     div.addEventListener("click", (e) => {
-      if (e.target.closest(".del-btn")) return;
+      if (e.target.closest("button")) return;
       imageState.currentIndex = i;
-      renderAllImages(imageState, imageElements, mode);
+      renderAllImages(imageState, imageElements, mode, isEditableLocal);
     });
 
     imageElements.thumbnailsEl.appendChild(div);
   }
 }
 
-// MAIN FIX: always allow reordering within the same group (existing OR new)
 function reorderImages(fromIndex, toIndex, imageState) {
   const existingLen = imageState.existingImages.length;
   const fromExisting = fromIndex < existingLen;
   const toExisting = toIndex < existingLen;
 
-  // Only allow reordering inside the same group
   if (fromExisting !== toExisting) return;
 
   if (fromExisting) {
-    // Reorder existing images (edit mode)
     const item = imageState.existingImages.splice(fromIndex, 1)[0];
     imageState.existingImages.splice(toIndex, 0, item);
   } else {
-    // Reorder new images (create mode — this was previously blocked)
     const f = fromIndex - existingLen;
     const t = toIndex - existingLen;
 

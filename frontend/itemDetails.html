@@ -2,156 +2,238 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Item Details</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Detalhes do Item – ItemHub</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="../css/style.css">
 
   <style>
-    /* Existing styles (unchanged) */
-    .image-viewer { position: relative; display: flex; justify-content: center; align-items: center; background:#fff; border-radius:8px; padding:12px; min-height:320px; }
-    .image-viewer img.main-image { max-height:420px; width:auto; max-width:100%; object-fit:contain; border-radius:6px; transition:opacity 160ms ease; }
-    .viewer-arrow { position:absolute; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:6px; display:flex; justify-content:center; align-items:center; background:rgba(255,255,255,0.92); box-shadow:0 2px 6px rgba(0,0,0,0.08); cursor:pointer; z-index:10; }
-    .viewer-arrow.disabled { opacity:0.35; pointer-events:none; }
-    .viewer-arrow.left { left:8px; } .viewer-arrow.right { right:8px; }
-    .thumbnails { display:flex; gap:8px; overflow-x:auto; padding-top:10px; align-items:center; }
-    .thumb { position:relative; width:80px; height:60px; flex:0 0 auto; border-radius:6px; overflow:hidden; cursor:pointer; border:2px solid transparent; }
-    .thumb img { width:100%; height:100%; object-fit:cover; }
-    .thumb.active { border-color:#0d6efd; }
-    .thumb .del-btn { position:absolute; top:3px; right:3px; background:rgba(255,255,255,0.9); border-radius:4px; padding:2px 4px; font-size:12px; display:none; }
-    .thumb.edit-mode .del-btn { display:block; }
-    .no-image-placeholder { color:#6c757d; font-size:14px; text-align:center; }
-
-    /* REQUIRED FOR AUTOCOMPLETE */
-    .location-wrapper {
+    /* =============== VISUALIZADOR DE IMAGENS =============== */
+    .image-viewer {
       position: relative;
+      height: 420px;
+      background: #111;
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
-    .suggestions {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      z-index: 1050;
-      max-height: 200px;
-      overflow-y: auto;
-      background: white;
-      border: 1px solid #ced4da;
-      border-radius: 0.375rem;
-      margin-top: 2px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      display: none;
+    .main-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: opacity 0.4s ease;
+      background: #000;
     }
-    .suggestions div {
-      padding: 10px 12px;
+    .no-image-placeholder {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      font-size: 1.2rem;
+      background: #222;
       cursor: pointer;
-      font-size: 14px;
     }
-    .suggestions div:hover,
-    .suggestions div.active {
-      background: #0d6efd;
+    .viewer-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.6);
       color: white;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      cursor: pointer;
+      z-index: 10;
+      transition: all 0.2s;
+      backdrop-filter: blur(4px);
+    }
+    .viewer-arrow:hover { background: rgba(0,0,0,0.8); transform: translateY(-50%) scale(1.1); }
+    .viewer-arrow.disabled { opacity: 0.3; pointer-events: none; }
+    .viewer-arrow.left { left: 16px; }
+    .viewer-arrow.right { right: 16px; }
+
+    .thumbnails {
+      margin-top: 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 12px;
+    }
+    .thumb {
+      aspect-ratio: 1;
+      overflow: hidden;
+      border-radius: 12px;
+      cursor: pointer;
+      position: relative;
+      border: 4px solid transparent;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .thumb:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
+    .thumb.active {
+      border-color: var(--bs-primary);
+      box-shadow: 0 0 0 4px rgba(13,110,253,0.25);
+    }
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Edit mode overlays */
+    .thumb .drag-handle,
+    .thumb .del-btn {
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .thumb:hover .drag-handle,
+    .thumb:hover .del-btn {
+      opacity: 1;
+    }
+    .drag-handle {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: white;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 5;
+    }
+    .del-btn {
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      z-index: 5;
+    }
+
+    /* Dropzone feedback */
+    .image-viewer.drag-over {
+      border: 4px dashed var(--bs-primary);
+      background: rgba(var(--bs-primary-rgb), 0.1);
+    }
+
+    @media (max-width: 992px) {
+      .image-viewer { height: 340px; }
+    }
+    @media (max-width: 576px) {
+      .image-viewer { height: 300px; }
+      .viewer-arrow { width: 48px; height: 48px; font-size: 1.5rem; }
     }
   </style>
 </head>
-<body class="bg-light">
+<body>
+
   <div id="navbarContainer"></div>
 
-  <div class="container mt-4">
-    <h3 id="page-title" class="mb-4">Item Details</h3>
+  <div class="container my-5">
+    <h3 id="page-title" class="mb-5 text-center fw-bold">Detalhes do Item</h3>
+    <div id="alertContainer" class="mb-4"></div>
 
-    <!-- Image viewer (unchanged) -->
-    <div id="image-viewer-wrapper" class="mb-4">
-      <div id="imageViewer" class="image-viewer">
-        <div id="prevBtn" class="viewer-arrow left" title="Previous"><i class="bi bi-chevron-left"></i></div>
-        <img id="mainImage" class="main-image d-none" alt="Item image">
-        <div id="noImagePlaceholder" class="no-image-placeholder">No images available</div>
-        <div id="nextBtn" class="viewer-arrow right" title="Next"><i class="bi bi-chevron-right"></i></div>
+    <div class="row g-5">
+      <!-- Visualizador de Imagens -->
+      <div class="col-lg-6">
+        <div class="card shadow-sm border-0 p-3">
+          <div id="imageViewer" class="image-viewer">
+            <div id="prevBtn" class="viewer-arrow left" title="Anterior">
+              <i class="bi bi-chevron-left"></i>
+            </div>
+            <img id="mainImage" class="main-image d-none" alt="Imagem do item">
+            <div id="noImagePlaceholder" class="no-image-placeholder">
+              Sem imagens disponíveis
+            </div>
+            <div id="nextBtn" class="viewer-arrow right" title="Próximo">
+              <i class="bi bi-chevron-right"></i>
+            </div>
+          </div>
+          <div id="thumbnails" class="thumbnails"></div>
+        </div>
       </div>
-      <div id="thumbnails" class="thumbnails mt-3"></div>
+
+      <!-- Formulário -->
+      <div class="col-lg-6">
+        <div class="card shadow-sm border-0 p-4">
+          <form id="item-form">
+            <div class="mb-4">
+              <label for="title" class="form-label fw-medium">Título</label>
+              <input type="text" id="title" class="form-control form-control-lg" required>
+            </div>
+
+            <div class="mb-4">
+              <label for="category" class="form-label fw-medium">Categoria</label>
+              <select id="category" class="form-select form-select-lg" required>
+                <option value="">Carregando...</option>
+              </select>
+            </div>
+
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label for="duration_days" class="form-label fw-medium">Duração (dias)</label>
+                <select id="duration_days" class="form-select form-select-lg" required>
+                  <option value="1">1 dia</option>
+                  <option value="7" selected>7 dias</option>
+                  <option value="15">15 dias</option>
+                  <option value="30">30 dias</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="offer_type" class="form-label fw-medium">Tipo de Anúncio</label>
+                <select id="offer_type" class="form-select form-select-lg">
+                  <option value="pay">À Venda</option>
+                  <option value="free" selected>Grátis</option>
+                  <option value="paid_to_take">Pago pra Levar</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label for="volume" class="form-label fw-medium">Volume (opcional)</label>
+              <input type="number" id="volume" class="form-control form-control-lg">
+            </div>
+
+            <!-- Localização -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Localização *</label>
+              <div class="location-wrapper mb-3">
+                <label for="state" class="form-label">Estado</label>
+                <input type="text" id="state" class="form-control" placeholder="Digite para buscar o estado..." autocomplete="off" required>
+                <div id="state-suggestions" class="suggestions"></div>
+              </div>
+              <div class="location-wrapper mb-3">
+                <label for="city" class="form-label">Cidade</label>
+                <input type="text" id="city" class="form-control" placeholder="Primeiro escolha o estado" autocomplete="off" disabled required>
+                <div id="city-suggestions" class="suggestions"></div>
+              </div>
+              <div class="mb-3">
+                <label for="address" class="form-label">Endereço completo</label>
+                <input type="text" id="address" class="form-control" placeholder="Ex: Av. Paulista, 1000 - Bela Vista" required>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label for="description" class="form-label fw-medium">Descrição</label>
+              <textarea id="description" class="form-control" rows="4" placeholder="Descreva seu item..."></textarea>
+            </div>
+
+            <div id="button-group" class="d-flex flex-wrap gap-3 justify-content-center">
+              <button type="submit" id="save-btn" class="btn btn-primary btn-lg px-5">Salvar</button>
+              <button type="button" id="delete-btn" class="btn btn-danger btn-lg px-5 d-none">Excluir</button>
+              <button type="button" id="cancel-btn" class="btn btn-outline-secondary btn-lg px-5">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
-
-    <form id="item-form" class="mt-3 bg-white p-4 rounded shadow-sm">
-
-      <!-- Images -->
-      <div class="mb-4">
-        <label for="images" class="form-label fw-semibold">Images</label>
-        <input type="file" id="images" class="form-control" accept="image/*" multiple>
-        <div class="form-text">You can select multiple images. Use thumbnails to reorder/delete before saving.</div>
-      </div>
-
-      <!-- Title & Category -->
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label for="title" class="form-label">Title</label>
-          <input type="text" id="title" class="form-control" required>
-        </div>
-        <div class="col-md-6 mb-3">
-          <label for="category" class="form-label">Category</label>
-          <select id="category" class="form-select" required><option value="">Loading...</option></select>
-        </div>
-      </div>
-
-      <!-- Duration, Offer Type, Volume -->
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label for="duration_days" class="form-label">Duration (days)</label>
-          <select id="duration_days" class="form-select" required>
-            <option value="1">1 day</option>
-            <option value="7">7 days</option>
-            <option value="15">15 days</option>
-            <option value="30">30 days</option>
-          </select>
-        </div>
-        <div class="col-md-4 mb-3">
-          <label for="offer_type" class="form-label">Offer Type</label>
-          <select id="offer_type" class="form-select">
-            <option value="pay">Pay</option>
-            <option value="free">Free</option>
-            <option value="paid_to_take">Paid to Take</option>
-          </select>
-        </div>
-        <div class="col-md-4 mb-3">
-          <label for="volume" class="form-label">Volume</label>
-          <input type="number" id="volume" class="form-control">
-        </div>
-      </div>
-
-      <!-- LOCATION FIELDS — FIXED -->
-      <div class="mb-4">
-        <label class="form-label fw-semibold">Localização *</label>
-
-        <div class="location-wrapper mb-3">
-          <label for="state" class="form-label">Estado</label>
-          <input type="text" id="state" class="form-control" placeholder="Digite para buscar o estado..." autocomplete="off" required>
-          <div id="state-suggestions" class="suggestions"></div>
-        </div>
-
-        <div class="location-wrapper mb-3">
-          <label for="city" class="form-label">Cidade</label>
-          <input type="text" id="city" class="form-control" placeholder="Primeiro escolha o estado" autocomplete="off" disabled required>
-          <div id="city-suggestions" class="suggestions"></div>
-        </div>
-
-        <div class="mb-3">
-          <label for="address" class="form-label">Endereço completo (rua, número, bairro...)</label>
-          <input type="text" id="address" class="form-control" placeholder="Ex: Av. Paulista, 1000 - Bela Vista" required>
-        </div>
-      </div>
-
-      <!-- Description -->
-      <div class="mb-3">
-        <label for="description" class="form-label">Description</label>
-        <textarea id="description" class="form-control" rows="3"></textarea>
-      </div>
-
-      <!-- Buttons -->
-      <div id="button-group" class="d-flex gap-2 mt-4">
-        <button type="submit" id="save-btn" class="btn btn-primary">Save</button>
-        <button type="button" id="delete-btn" class="btn btn-danger d-none">Delete</button>
-        <button type="button" id="cancel-btn" class="btn btn-secondary">Cancel</button>
-      </div>
-    </form>
-
-    <div id="alertContainer" class="mt-3"></div>
   </div>
 
   <div id="offersModalContainer"></div>

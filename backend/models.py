@@ -93,6 +93,7 @@ class Item(db.Model):
         cascade="all, delete-orphan"
     )
 
+   
     # ------------------------------
     # Helper properties/methods
     # ------------------------------
@@ -103,6 +104,7 @@ class Item(db.Model):
     def is_expired(self):
         return datetime.utcnow() >= self.expires_at
 
+    
     def get_primary_image(self):
         if self.images:
             return self.images[0].image_url

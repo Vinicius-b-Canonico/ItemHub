@@ -1,19 +1,13 @@
 // formHandler.js
-import {
-  createItem,
-  updateItem,
-  deleteItem,
-} from "../../api/itemsApi.js";
+import { createItem, updateItem, deleteItem } from "../../api/itemsApi.js";
 import * as helpers from "./helpers.js";
-import { validateLocation } from "./locationHandler.js"; // ← NEW: validate state/city/address
+import { validateLocation } from "./locationHandler.js";
+import { showSuccessModal } from "../../components/resultModals.js";
 
 export async function handleSubmit(e, mode, itemId, imageState) {
   e.preventDefault();
 
-  // Validate location fields before proceeding
-  if (!validateLocation()) {
-    return; // validation already shows alert
-  }
+  if (!validateLocation()) return;
 
   const data = helpers.collectFormData();
 
@@ -23,47 +17,50 @@ export async function handleSubmit(e, mode, itemId, imageState) {
       const mainImage = orderedNewImages.length > 0 ? orderedNewImages[0] : null;
       const extraImages = orderedNewImages.length > 1 ? orderedNewImages.slice(1) : [];
 
-      const payload = {
-        ...data,
-        mainImage,
-        extraImages,
-      };
+      await createItem({ ...data, mainImage, extraImages });
 
-      await createItem(payload);
-      helpers.showAlert("success", "Item criado com sucesso!");
-      setTimeout(() => window.location.href = "myItems.html", 1200);
-    } 
+      showSuccessModal({
+        title: "Anúncio Criado!",
+        message: "Seu item foi publicado com sucesso."
+      });
+
+      setTimeout(() => window.location.href = "myItems.html", 1500);
+    }
 
     else if (mode === "edit" && itemId) {
       const image_order = imageState.existingImages.map(img => img.id);
 
-      const payload = {
+      await updateItem(itemId, {
         ...data,
         deleteImageIds: Array.from(imageState.deleteImageIds),
-        new_image_order: JSON.stringify(image_order), // backend expects this key
-      };
+        new_image_order: JSON.stringify(image_order),
+      });
 
-      await updateItem(itemId, payload);
-      helpers.showAlert("success", "Item atualizado com sucesso!");
-      setTimeout(() => window.location.href = "myItems.html", 1200);
+      showSuccessModal({
+        title: "Anúncio Atualizado!",
+        message: "As alterações foram salvas com sucesso."
+      });
+
+      setTimeout(() => window.location.href = "myItems.html", 1500);
     }
   } catch (err) {
     console.error(err);
-    const msg = err.message?.includes("state") || err.message?.includes("city") || err.message?.includes("address")
-      ? "Verifique os campos de localização."
-      : err.message || "Erro ao salvar item.";
-    helpers.showAlert("danger", `Erro: ${msg}`);
+    const msg = err.message || "Erro ao salvar anúncio.";
+    helpers.showAlert("danger", msg);
   }
 }
 
 export async function handleDelete(itemId) {
-  if (!confirm("Tem certeza que deseja excluir este item?")) return;
+  if (!confirm("Tem certeza que deseja excluir este anúncio permanentemente?")) return;
 
   try {
     await deleteItem(itemId);
-    helpers.showAlert("success", "Item excluído com sucesso!");
-    setTimeout(() => window.location.href = "myItems.html", 1200);
+    showSuccessModal({
+      title: "Anúncio Excluído",
+      message: "O item foi removido com sucesso."
+    });
+    setTimeout(() => window.location.href = "myItems.html", 1500);
   } catch (err) {
-    helpers.showAlert("danger", `Erro: ${err.message || "Erro ao excluir item."}`);
+    helpers.showAlert("danger", err.message || "Erro ao excluir anúncio.");
   }
 }

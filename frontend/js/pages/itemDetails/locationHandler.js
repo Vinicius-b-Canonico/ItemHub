@@ -4,7 +4,6 @@ import * as helpers from "./helpers.js";
 
 let allStates = [];
 let allCitiesByState = {};
-
 let stateInput, cityInput, addressInput, stateSuggestions, citySuggestions;
 
 function initDOM() {
@@ -22,15 +21,12 @@ export async function initLocationHandler() {
     allStates = await getStates();
     setupStateAutocomplete();
   } catch (err) {
-    console.error("Failed to load states:", err);
-    helpers.showAlert("danger", "Erro ao carregar estados.");
+    helpers.showAlert("danger", "Erro ao carregar estados do Brasil.");
   }
 }
 
-// STATE AUTOCOMPLETE
 function setupStateAutocomplete() {
   stateInput.addEventListener("input", handleStateInput);
-
   document.addEventListener("click", (e) => {
     if (!stateInput.contains(e.target) && !stateSuggestions.contains(e.target)) {
       hideSuggestions(stateSuggestions);
@@ -39,7 +35,7 @@ function setupStateAutocomplete() {
 }
 
 function handleStateInput() {
-  const query = stateInput.value.trim();
+  const query = stateInput.value.trim().toLowerCase();
   if (!query) {
     hideSuggestions(stateSuggestions);
     clearCityField();
@@ -47,8 +43,8 @@ function handleStateInput() {
   }
 
   const matches = allStates
-    .filter(s => s.toLowerCase().includes(query.toLowerCase()))
-    .slice(0, 10);
+    .filter(s => s.toLowerCase().includes(query))
+    .slice(0, 8);
 
   showSuggestions(stateSuggestions, matches, (selected) => {
     stateInput.value = selected;
@@ -58,36 +54,22 @@ function handleStateInput() {
 }
 
 async function loadCitiesForState(state) {
-  if (!state || state.trim() === "") {
-    console.warn("loadCitiesForState called with empty state");
-    clearCityField();
-    return;
-  }
-    console.log("loadCitiesForState called with state: ", state);
+  if (!state) return clearCityField();
+
+  cityInput.disabled = true;
+  cityInput.placeholder = "Carregando cidades...";
 
   try {
-    cityInput.disabled = true;
-    cityInput.placeholder = "Carregando cidades...";
-    cityInput.value = "";
-
     if (!allCitiesByState[state]) {
-      console.log("Fetching cities for:", state);
-      const cities = await getCities(state);
-      allCitiesByState[state] = cities.sort();
-    } else {
-      console.log("Using cached cities for:", state);
+      allCitiesByState[state] = (await getCities(state)).sort();
     }
-
     cityInput.disabled = false;
-    cityInput.placeholder = "Digite para buscar a cidade...";
+    cityInput.placeholder = "Digite o nome da cidade...";
     cityInput.focus();
-
     setupCityAutocomplete(state);
   } catch (err) {
-    console.error("Failed to load cities for state:", state, err);
-    helpers.showAlert("danger", `Erro ao carregar cidades para ${state}.`);
-    cityInput.disabled = true;
-    cityInput.placeholder = "Erro ao carregar cidades";
+    helpers.showAlert("danger", `Erro ao carregar cidades de ${state}.`);
+    cityInput.placeholder = "Erro ao carregar";
   }
 }
 
@@ -96,25 +78,17 @@ function clearCityField() {
   cityInput.disabled = true;
   cityInput.placeholder = "Primeiro escolha o estado";
   hideSuggestions(citySuggestions);
-  allCitiesByState = {}; // optional: clear cache if state changes
 }
 
-// CITY AUTOCOMPLETE — now properly scoped
-function setupCityAutocomplete(currentState) {
-  // Remove old listener to prevent duplicates
-  cityInput.removeEventListener("input", cityInput._cityHandler);
-
+function setupCityAutocomplete(state) {
+  cityInput.removeEventListener("input", cityInput._handler);
   const handler = () => {
     const query = cityInput.value.trim().toLowerCase();
-    if (!query) {
-      hideSuggestions(citySuggestions);
-      return;
-    }
+    if (!query) return hideSuggestions(citySuggestions);
 
-    const cities = allCitiesByState[currentState] || [];
-    const matches = cities
+    const matches = (allCitiesByState[state] || [])
       .filter(c => c.toLowerCase().includes(query))
-      .slice(0, 10);
+      .slice(0, 8);
 
     showSuggestions(citySuggestions, matches, (selected) => {
       cityInput.value = selected;
@@ -122,81 +96,50 @@ function setupCityAutocomplete(currentState) {
       addressInput.focus();
     });
   };
-
   cityInput.addEventListener("input", handler);
-  cityInput._cityHandler = handler; // store for removal
-
-  // Click outside
-  document.addEventListener("click", (e) => {
-    if (!cityInput.contains(e.target) && !citySuggestions.contains(e.target)) {
-      hideSuggestions(citySuggestions);
-    }
-  });
+  cityInput._handler = handler;
 }
 
-// SHARED UI
 function showSuggestions(container, items, onSelect) {
   container.innerHTML = "";
   if (items.length === 0) {
-    container.innerHTML = '<div class="text-muted p-2">Nenhum resultado</div>';
-    container.style.display = "block";
+    container.innerHTML = `<div class="p-2 text-muted small">Nenhum resultado</div>`;
+    container.classList.add("show");
     return;
   }
 
   items.forEach(item => {
     const div = document.createElement("div");
     div.textContent = item;
-    div.addEventListener("click", () => onSelect(item));
-    div.addEventListener("mousemove", () => {
-      container.querySelectorAll("div").forEach(d => d.classList.remove("active"));
-      div.classList.add("active");
-    });
+    div.className = "px-3 py-2 hover-bg-light cursor-pointer";
+    div.onclick = () => onSelect(item);
     container.appendChild(div);
   });
-
-  container.style.display = "block";
+  container.classList.add("show");
 }
 
 function hideSuggestions(container) {
-  container.style.display = "none";
-  container.innerHTML = "";
+  container.classList.remove("show");
+  setTimeout(() => container.innerHTML = "", 200);
 }
 
 export async function fillLocationFields(item) {
   if (!item.state) return;
 
-  // Fill state & address immediately
-  stateInput.value = item.state || "";
+  stateInput.value = item.state;
   addressInput.value = item.address || "";
 
-  try {
-    // Wait for cities to be loaded and autocomplete to be set up
-    await loadCitiesForState(item.state);
-
-    // NOW it's safe to set the city value
-    cityInput.value = item.city || "";
-    cityInput.disabled = false;
-    cityInput.placeholder = "Digite para buscar a cidade...";
-  } catch (err) {
-    console.error("Failed to load cities when editing:", err);
-    cityInput.disabled = true;
-    cityInput.placeholder = "Erro ao carregar cidades";
-  }
-}
-
-
-export function collectLocationData() {
-  return {
-    state: stateInput.value.trim(),
-    city: cityInput.value.trim(),
-    address: addressInput.value.trim(),
-  };
+  await loadCitiesForState(item.state);
+  cityInput.value = item.city || "";
 }
 
 export function validateLocation() {
-  const { state, city, address } = collectLocationData();
+  const state = stateInput?.value.trim();
+  const city = cityInput?.value.trim();
+  const address = addressInput?.value.trim();
+
   if (!state || !city || !address) {
-    helpers.showAlert("danger", "Estado, cidade e endereço são obrigatórios.");
+    helpers.showAlert("danger", "Estado, cidade e endereço completo são obrigatórios.");
     return false;
   }
   return true;

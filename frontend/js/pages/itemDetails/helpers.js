@@ -7,7 +7,6 @@ export function fillForm(item) {
   document.getElementById("description").value = item.description || "";
   document.getElementById("offer_type").value = item.offer_type || "free";
   document.getElementById("volume").value = item.volume || "";
-  // location fields are filled by locationHandler.fillLocationFields()
 }
 
 export function disableForm(form) {
@@ -24,7 +23,6 @@ export function collectFormData() {
     description: document.getElementById("description").value.trim(),
     offer_type: document.getElementById("offer_type").value,
     volume: document.getElementById("volume").value || null,
-    // New location fields
     state: document.getElementById("state").value.trim(),
     city: document.getElementById("city").value.trim(),
     address: document.getElementById("address").value.trim(),

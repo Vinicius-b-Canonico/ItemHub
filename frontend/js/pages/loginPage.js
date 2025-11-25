@@ -1,11 +1,13 @@
 import { loginUser, getCurrentUser } from "../api/authApi.js";
+import { loadNavbar } from "../components/navbar.js";
+import { showSuccessModal } from "../components/resultModals.js"; // ← NEW import
 
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.querySelector("#loginForm");
-  const alertContainer = document.querySelector("#alertContainer");
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadNavbar();
 
-  // Redirect if already logged in
-  checkExistingSession();
+  const form = document.getElementById("loginForm");
+
+  await checkExistingSession();
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -13,39 +15,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const username = form.username.value.trim();
     const password = form.password.value.trim();
 
-    if (!username || !password) {
-      showAlert("Please fill all fields.", "warning");
-      return;
-    }
+    if (!username || !password) return; // API will handle error modal
 
     try {
       await loginUser(username, password);
-      showAlert("✅ Login successful! Redirecting...", "success");
+      showSuccessModal({ message: "Login realizado com sucesso! Redirecionando..." });
 
       setTimeout(() => {
         window.location.href = "dashboard.html";
       }, 1200);
-    } catch (err) {
-      showAlert(`❌ ${err.message}`, "danger");
-    }
+    } catch {} // API handles error modal
   });
 
   async function checkExistingSession() {
     try {
       const user = await getCurrentUser();
-      if (user && user.username) {
+      if (user?.username) {
         window.location.href = "dashboard.html";
       }
-    } catch (e) {
-      // Not logged in, continue
-    }
-  }
-
-  function showAlert(message, type) {
-    alertContainer.innerHTML = `
-      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>`;
+    } catch {}
   }
 });

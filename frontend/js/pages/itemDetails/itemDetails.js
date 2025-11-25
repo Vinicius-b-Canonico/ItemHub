@@ -6,12 +6,11 @@ import {
   getItemCategories,
   uploadItemImage
 } from "../../api/itemsApi.js";
-
 import * as image from "./imageHandler.js";
 import * as helpers from "./helpers.js";
 import * as formHandler from "./formHandler.js";
 import * as offerHandler from "./offerHandler.js";
-import { initLocationHandler, fillLocationFields } from "./locationHandler.js"; // ← NEW
+import { initLocationHandler, fillLocationFields } from "./locationHandler.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadNavbar();
@@ -23,12 +22,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const cancelBtn = document.getElementById("cancel-btn");
   const categorySelect = document.getElementById("category");
 
-  const imageInput = document.getElementById("images");
   const mainImageEl = document.getElementById("mainImage");
   const noImagePlaceholder = document.getElementById("noImagePlaceholder");
   const prevBtn = document.getElementById("prevBtn");
   const nextBtn = document.getElementById("nextBtn");
   const thumbnailsEl = document.getElementById("thumbnails");
+  const imageViewer = document.getElementById("imageViewer");
 
   const params = new URLSearchParams(window.location.search);
   const itemId = params.get("id");
@@ -52,13 +51,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       .map((c) => `<option value="${c}">${c}</option>`)
       .join("");
   } catch {
-    categorySelect.innerHTML = `<option value="">(failed to load)</option>`;
+    categorySelect.innerHTML = `<option value="">(erro ao carregar)</option>`;
   }
 
-  pageTitle.textContent =
-    mode === "create" ? "Create Item" : mode === "edit" ? "Edit Item" : "Item Details";
+  pageTitle.textContent = mode === "create" ? "Criar Anúncio" : mode === "edit" ? "Editar Anúncio" : "Detalhes do Item";
 
-  // ← NEW: Initialize location autocomplete (states + cities)
   await initLocationHandler();
 
   let loadedItem = null;
@@ -81,13 +78,42 @@ document.addEventListener("DOMContentLoaded", async () => {
     thumbnailsEl,
   };
 
+  const isEditable = mode === "create" || mode === "edit";
+
+  // Create hidden file input
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = "image/*";
+  fileInput.multiple = true;
+  fileInput.style.display = "none";
+  document.body.appendChild(fileInput);
+
+  fileInput.addEventListener("change", (e) => handleImageUpload(e.target.files, mode, itemId, imageState, imageElements));
+
+  // Make viewer a dropzone if editable
+  if (isEditable) {
+    imageViewer.addEventListener("click", () => fileInput.click());
+
+    imageViewer.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      imageViewer.classList.add("drag-over");
+    });
+
+    imageViewer.addEventListener("dragleave", () => imageViewer.classList.remove("drag-over"));
+
+    imageViewer.addEventListener("drop", (e) => {
+      e.preventDefault();
+      imageViewer.classList.remove("drag-over");
+      handleImageUpload(e.dataTransfer.files, mode, itemId, imageState, imageElements);
+    });
+  }
+
   if (mode !== "create" && itemId) {
     try {
       loadedItem = await getItem(itemId);
-      helpers.fillForm(loadedItem);           // ← fills title, category, etc.
-      await fillLocationFields(loadedItem);         // ← fills state, city, address
+      helpers.fillForm(loadedItem);
+      await fillLocationFields(loadedItem);
 
-      // Images loading (unchanged)
       imageState.existingImages = [];
       imageState.existingImageOrder = [];
 
@@ -104,12 +130,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         imageState.existingImageOrder.push(null);
       }
 
-      image.renderAllImages(imageState, imageElements, mode);
+      image.renderAllImages(imageState, imageElements, mode, isEditable); // Pass isEditable
 
       if (mode === "view") {
         helpers.disableForm(form);
         saveBtn.classList.add("d-none");
-        imageInput.classList.add("d-none");
         deleteBtn.classList.add("d-none");
         await offerHandler.injectOfferButtons(loadedItem, currentUser);
       } else {
@@ -117,24 +142,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     } catch (err) {
       console.error(err);
-      helpers.showAlert("danger", "Failed to load item details.");
+      helpers.showAlert("danger", "Erro ao carregar anúncio.");
     }
   } else {
-    image.renderAllImages(imageState, imageElements, mode);
+    image.renderAllImages(imageState, imageElements, mode, isEditable); // Pass isEditable
   }
 
-  // Image navigation (unchanged)
   prevBtn.addEventListener("click", () => {
     if (imageState.currentIndex > 0) {
       imageState.currentIndex--;
-      image.renderAllImages(imageState, imageElements, mode);
+      image.renderAllImages(imageState, imageElements, mode, isEditable);
     }
   });
 
   nextBtn.addEventListener("click", () => {
     if (imageState.currentIndex < image.combinedCount(imageState) - 1) {
       imageState.currentIndex++;
-      image.renderAllImages(imageState, imageElements, mode);
+      image.renderAllImages(imageState, imageElements, mode, isEditable);
     }
   });
 
@@ -144,49 +168,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (ev.key === "ArrowLeft") {
       if (imageState.currentIndex > 0) {
         imageState.currentIndex--;
-        image.renderAllImages(imageState, imageElements, mode);
+        image.renderAllImages(imageState, imageElements, mode, isEditable);
       }
     } else if (ev.key === "ArrowRight") {
       if (imageState.currentIndex < image.combinedCount(imageState) - 1) {
         imageState.currentIndex++;
-        image.renderAllImages(imageState, imageElements, mode);
+        image.renderAllImages(imageState, imageElements, mode, isEditable);
       }
     }
-  });
-
-  // Image upload (unchanged)
-  imageInput.addEventListener("change", async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-
-    if (mode === "edit") {
-      for (const f of files) {
-        try {
-          const uploaded = await uploadItemImage(itemId, f);
-          imageState.existingImages.push({
-            id: uploaded.id,
-            image_url: uploaded.image_url,
-          });
-          imageState.existingImageOrder.push(uploaded.id);
-        } catch (err) {
-          console.error("Failed to upload image:", err);
-          helpers.showAlert("danger", "Failed to upload image.");
-        }
-      }
-    } else {
-      for (const f of files) {
-        imageState.newImages.push(f);
-        const objUrl = URL.createObjectURL(f);
-        imageState.newImagePreviews.push(objUrl);
-      }
-      imageState.newImageOrder = imageState.newImages.map((_, idx) => idx);
-    }
-
-    if (image.combinedCount(imageState) > 0) {
-      imageState.currentIndex = image.combinedCount(imageState) - files.length;
-    }
-
-    image.renderAllImages(imageState, imageElements, mode);
   });
 
   window.addEventListener("beforeunload", () => {
@@ -195,7 +184,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Submit (unchanged – formHandler will now use new collectFormData)
   form.addEventListener("submit", (e) => formHandler.handleSubmit(e, mode, itemId, imageState));
 
   deleteBtn.addEventListener("click", () => formHandler.handleDelete(itemId));
@@ -208,3 +196,36 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 });
+
+// Handler for file add (from click or drop)
+async function handleImageUpload(fileList, mode, itemId, imageState, imageElements) {
+  const files = Array.from(fileList).filter(f => f.type.startsWith("image/"));
+  if (!files.length) return;
+
+  if (mode === "edit") {
+    for (const f of files) {
+      try {
+        const uploaded = await uploadItemImage(itemId, f);
+        imageState.existingImages.push({
+          id: uploaded.id,
+          image_url: uploaded.image_url,
+        });
+        imageState.existingImageOrder.push(uploaded.id);
+      } catch (err) {
+        console.error("Erro ao subir imagem:", err);
+        helpers.showAlert("danger", "Erro ao subir imagem.");
+      }
+    }
+  } else {
+    for (const f of files) {
+      imageState.newImages.push(f);
+      imageState.newImagePreviews.push(URL.createObjectURL(f));
+    }
+    imageState.newImageOrder = imageState.newImages.map((_, idx) => idx);
+  }
+
+  // Set to last added (last selected/uploaded as main)
+  imageState.currentIndex = imageState.existingImages.length + imageState.newImages.length - 1;
+
+  image.renderAllImages(imageState, imageElements, mode, mode === "create" || mode === "edit");
+}
