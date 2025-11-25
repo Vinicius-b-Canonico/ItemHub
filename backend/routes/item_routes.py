@@ -6,6 +6,9 @@ from werkzeug.utils import secure_filename
 from models import db, Item, User, ItemImage
 from utils.image_processing import save_processed_image
 import json
+import requests
+from utils.location import is_valid_state, is_valid_city
+
 
 item_bp = Blueprint("item", __name__)
 
@@ -20,10 +23,6 @@ def allowed_file(filename):
 @item_bp.route("/", methods=["POST"])
 @jwt_required()
 def create_item():
-    """
-    CREATE ITEM — now supports MULTIPLE IMAGES.
-    Use form-data with `images` as a multi-file field.
-    """
     user_id = int(get_jwt_identity())
     user: User = User.get_by_id(user_id)
     if not user:
@@ -34,18 +33,34 @@ def create_item():
     duration_days = request.form.get("duration_days", type=int)
     offer_type = request.form.get("offer_type", "free")
 
+    # NEW location fields
+    state = request.form.get("state")
+    city = request.form.get("city")
+    address = request.form.get("address")
+
     if not title or not category or not duration_days:
         return jsonify({"error": "Missing required fields"}), 400
     if duration_days not in [1, 7, 15, 30]:
         return jsonify({"error": "Invalid duration"}), 400
 
-    # ------------------------------------------------------------------
-    # Handle MULTIPLE image uploads
-    # ------------------------------------------------------------------
+    # ----------------------------------------------------------
+    # LOCATION VALIDATION USING THE NEW CORE HELPERS
+    # ----------------------------------------------------------
+    if not state or not city:
+        return jsonify({"error": "State and city are required"}), 400
+
+    if not is_valid_state(state):
+        return jsonify({"error": f"Invalid state: {state}"}), 400
+
+    if not is_valid_city(state, city):
+        return jsonify({"error": f"Invalid city '{city}' for state '{state}'"}), 400
+
+    # ----------------------------------------------------------
+    # MULTIPLE IMAGE HANDLING (unchanged)
+    # ----------------------------------------------------------
     uploaded_files = request.files.getlist("images")
     saved_images = []
 
-    # Backwards compatibility: support legacy "image" field
     legacy_single = request.files.get("image")
     if legacy_single:
         uploaded_files.append(legacy_single)
@@ -60,14 +75,13 @@ def create_item():
         )
         saved_images.append(filename)
 
-    # Choose the FIRST image as the "main" compatibility field
     main_image_url = None
     if saved_images:
         main_image_url = f"/items/image/{saved_images[0]}"
 
-    # ------------------------------------------------------------------
-    # Create Item
-    # ------------------------------------------------------------------
+    # ----------------------------------------------------------
+    # CREATE ITEM
+    # ----------------------------------------------------------
     item = Item(
         owner=user,
         owner_username=user.username,
@@ -76,41 +90,34 @@ def create_item():
         category=category,
         offer_type=offer_type,
         volume=request.form.get("volume", type=float),
-        location=request.form.get("location"),
+        state=state,
+        city=city,
+        address=address,
         duration_days=duration_days,
-        image_url=main_image_url,     # still exists for main display
+        image_url=main_image_url,
         created_at=datetime.utcnow(),
     )
+
     db.session.add(item)
     db.session.commit()
 
-    # ------------------------------------------------------------------
-    # Create ItemImage rows
-    # ------------------------------------------------------------------
+    # Save item images
     for idx, filename in enumerate(saved_images):
-        img = ItemImage(
+        db.session.add(ItemImage(
             item_id=item.id,
             image_url=f"/items/image/{filename}",
             position=idx,
             enabled=True
-        )
-        db.session.add(img)
+        ))
 
     db.session.commit()
 
     return jsonify({"message": "Item created successfully", "item_id": item.id}), 201
 
+
 @item_bp.route("/<int:item_id>", methods=["PUT"])
 @jwt_required()
 def update_item(item_id):
-    """
-    UPDATE ITEM — supports:
-    - Updating item fields
-    - Deleting specific images
-    - Reordering images
-    - Appending new images
-    - Clearing all images
-    """
     user_id = int(get_jwt_identity())
     user: User = User.get_by_id(user_id)
     if not user:
@@ -125,30 +132,45 @@ def update_item(item_id):
     data = request.form or request.get_json() or {}
 
     # -------------------------------------------------------
-    # Update standard item fields
+    # Update STANDARD fields
     # -------------------------------------------------------
     editable_fields = [
         "title", "description", "category", "offer_type",
-        "volume", "location", "duration_days"
+        "volume", "duration_days",
+        "state", "city", "address"
     ]
+
     for field in editable_fields:
         if field in data:
             setattr(item, field, data[field])
 
     # -------------------------------------------------------
-    # IMAGE HANDLING PIPELINE
+    # LOCATION VALIDATION (only if user changed the fields)
+    # -------------------------------------------------------
+    if "state" in data or "city" in data:
+        state = item.state
+        city = item.city
+
+        if not state or not city:
+            return jsonify({"error": "State and city are required"}), 400
+
+        if not is_valid_state(state):
+            return jsonify({"error": f"Invalid state: {state}"}), 400
+
+        if not is_valid_city(state, city):
+            return jsonify({"error": f"Invalid city '{city}' for state '{state}'"}), 400
+
+    # -------------------------------------------------------
+    # IMAGE HANDLING (unchanged)
     # -------------------------------------------------------
 
-    # 1. CLEAR ALL IMAGES (if requested)
     clear_images = data.get("clear_images") in ["1", "true", True]
-
     if clear_images:
         ItemImage.query.filter_by(item_id=item.id).delete()
         item.image_url = None
         db.session.commit()
         return jsonify({"message": "Item updated"}), 200
 
-    # 2. DELETE SPECIFIC IMAGES
     delete_ids = request.form.getlist("delete_image_ids")
     delete_ids = [int(x) for x in delete_ids if x.isdigit()]
 
@@ -158,43 +180,33 @@ def update_item(item_id):
             ItemImage.id.in_(delete_ids)
         ).delete(synchronize_session=False)
 
-    # 3. REORDER IMAGES (optional)
     new_order_raw = data.get("new_image_order")
-
     if new_order_raw:
         try:
-            order_list = json.loads(new_order_raw)  # e.g. [4, 12, 7, 9]
+            order_list = json.loads(new_order_raw)
             order_list = [int(x) for x in order_list]
 
-            # Fetch all remaining item images
             existing_images = ItemImage.query.filter_by(item_id=item.id).all()
             img_map = {img.id: img for img in existing_images}
 
-            # Apply new positions based on provided order
             for pos, img_id in enumerate(order_list):
                 if img_id in img_map:
                     img_map[img_id].position = pos
                     img_map[img_id].enabled = True
 
-            # Any images NOT included get placed after the ordered list
-            tail_position = len(order_list)
+            tail = len(order_list)
             for img in existing_images:
                 if img.id not in order_list:
-                    img.position = tail_position
-                    tail_position += 1
-
+                    img.position = tail
+                    tail += 1
         except Exception:
             return jsonify({"error": "Invalid new_image_order JSON"}), 400
 
-    # 4. NORMALIZE POSITIONS (ensure 0..N-1)
     remaining = ItemImage.query.filter_by(item_id=item.id).order_by(ItemImage.position).all()
     for i, img in enumerate(remaining):
         img.position = i
 
-    # 5. APPEND NEW IMAGES
     new_files = request.files.getlist("images")
-
-    # Legacy compatibility: "image" field
     legacy_single = request.files.get("image")
     if legacy_single:
         new_files.append(legacy_single)
@@ -210,24 +222,18 @@ def update_item(item_id):
         )
         saved_images.append(filename)
 
-    # Append them after normalization
     if saved_images:
         start_pos = len(remaining)
-
         for i, filename in enumerate(saved_images):
-            db.session.add(
-                ItemImage(
-                    item_id=item.id,
-                    image_url=f"/items/image/{filename}",
-                    position=start_pos + i,
-                    enabled=True
-                )
-            )
+            db.session.add(ItemImage(
+                item_id=item.id,
+                image_url=f"/items/image/{filename}",
+                position=start_pos + i,
+                enabled=True
+            ))
 
-        # Refetch for new main image selection
         remaining = ItemImage.query.filter_by(item_id=item.id).order_by(ItemImage.position).all()
 
-    # 6. Update MAIN IMAGE URL
     first = ItemImage.query.filter_by(item_id=item.id).order_by(ItemImage.position).first()
     item.image_url = first.image_url if first else None
 
@@ -447,3 +453,6 @@ def get_item_categories():
         "Miscellaneous"
     ]
     return jsonify({"categories": categories}), 200
+
+
+

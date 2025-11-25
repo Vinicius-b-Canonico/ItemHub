@@ -46,10 +46,12 @@ def create_app():
     from routes.auth_routes import auth_bp
     from routes.item_routes import item_bp
     from routes.offer_routes import offer_bp
+    from routes.location_routes import location_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(item_bp, url_prefix="/api/items")
     app.register_blueprint(offer_bp, url_prefix="/api/offers")
+    app.register_blueprint(location_bp, url_prefix="/api/locations")
 
     return app
 

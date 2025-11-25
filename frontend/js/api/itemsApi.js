@@ -18,9 +18,14 @@ export async function createItem({
   description = "",
   offer_type = "free",
   volume = null,
-  location = "",
-  mainImage = null,      // single main image
-  extraImages = []       // array of File objects for additional images
+
+  // NEW
+  state = "",
+  city = "",
+  address = "",
+
+  mainImage = null,
+  extraImages = []
 }) {
   v("createItem() called with:", {
     title,
@@ -29,7 +34,9 @@ export async function createItem({
     description,
     offer_type,
     volume,
-    location,
+    state,
+    city,
+    address,
     mainImage,
     extraImages,
   });
@@ -42,22 +49,23 @@ export async function createItem({
   if (description) formData.append("description", description);
   if (offer_type) formData.append("offer_type", offer_type);
   if (volume !== null) formData.append("volume", volume);
-  if (location) formData.append("location", location);
 
-  // Main image 
+  // NEW: location fields
+  if (state) formData.append("state", state);
+  if (city) formData.append("city", city);
+  if (address) formData.append("address", address);
+
   if (mainImage) {
     formData.append("image", mainImage);
   }
 
-  // NEW: Extra images
   if (extraImages && Array.isArray(extraImages)) {
     extraImages.forEach((file) => formData.append("images", file));
   }
 
-  v("createItem() final FormData:", formData);
-
   return apiFormRequest("/items/", "POST", formData);
 }
+
 
 // ======================================================
 // PUT /api/items/<id> - Update Item 
@@ -70,12 +78,17 @@ export async function updateItem(
     category,
     offer_type,
     volume,
-    location,
+
+    // NEW:
+    state,
+    city,
+    address,
+
     duration_days,
-    mainImage = null,      // replaces item.image_url
-    extraImages = [],      // adds new extra images
-    deleteImageIds = [],   // array of IDs to remove from DB
-    new_image_order = []     // array of IDs in final sorted order
+    mainImage = null,
+    extraImages = [],
+    deleteImageIds = [],
+    new_image_order = []
   } = {}
 ) {
   v("updateItem() called with:", {
@@ -85,19 +98,25 @@ export async function updateItem(
     category,
     offer_type,
     volume,
-    location,
+    state,
+    city,
+    address,
     duration_days,
     mainImage,
     extraImages,
     deleteImageIds,
     new_image_order,
   });
+
   const needsFormData =
     mainImage ||
     (extraImages && extraImages.length > 0) ||
     (deleteImageIds && deleteImageIds.length > 0) ||
     (new_image_order && new_image_order.length > 0);
 
+  // -----------------------------------------------------
+  // CASE 1 — Use FormData
+  // -----------------------------------------------------
   if (needsFormData) {
     v("updateItem(): using FormData because images/reordering involved");
 
@@ -108,25 +127,24 @@ export async function updateItem(
     if (category) formData.append("category", category);
     if (offer_type) formData.append("offer_type", offer_type);
     if (volume !== undefined && volume !== null) formData.append("volume", volume);
-    if (location) formData.append("location", location);
+
+    // NEW location fields
+    if (state) formData.append("state", state);
+    if (city) formData.append("city", city);
+    if (address) formData.append("address", address);
+
     if (duration_days) formData.append("duration_days", duration_days);
 
-    // MAIN IMAGE
-    if (mainImage) {
-      formData.append("image", mainImage);
-    }
+    if (mainImage) formData.append("image", mainImage);
 
-    // NEW IMAGES
     if (extraImages && Array.isArray(extraImages)) {
       extraImages.forEach((file) => formData.append("images", file));
     }
 
-    // DELETE IMAGES
     if (deleteImageIds && Array.isArray(deleteImageIds)) {
       deleteImageIds.forEach((id) => formData.append("delete_image_ids", id));
     }
 
-    // NEW: SEND ORDERING INSTRUCTION
     if (new_image_order) {
       formData.append("new_image_order", new_image_order);
     }
@@ -135,16 +153,21 @@ export async function updateItem(
     return apiFormRequest(`/items/${item_id}`, "PUT", formData);
   }
 
-  // JSON fallback
-  v("updateItem(): sending JSON body since no images were involved");
-
+  // -----------------------------------------------------
+  // CASE 2 — Send JSON
+  // -----------------------------------------------------
   const body = {};
   if (title) body.title = title;
   if (description) body.description = description;
   if (category) body.category = category;
   if (offer_type) body.offer_type = offer_type;
   if (volume !== undefined && volume !== null) body.volume = volume;
-  if (location) body.location = location;
+
+  // NEW location fields
+  if (state) body.state = state;
+  if (city) body.city = city;
+  if (address) body.address = address;
+
   if (duration_days) body.duration_days = duration_days;
 
   v("Final JSON body:", body);
@@ -154,7 +177,6 @@ export async function updateItem(
     body,
   });
 }
-
 
 // ======================================================
 // POST /api/items/<id>/images - Upload ONE image

@@ -15,7 +15,7 @@ export async function loadNavbar() {
 
   container.innerHTML = `
     <div class="container-fluid">
-      <a class="navbar-brand" href="/dashboard.html">TradeMarket</a>
+      <a class="navbar-brand" href="/dashboard.html">ItemHub</a>
 
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
               data-bs-target="#navbarNav">

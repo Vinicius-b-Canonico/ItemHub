@@ -55,6 +55,7 @@ class ItemImage(db.Model):
             "enabled": self.enabled,
         }
 
+
 class Item(db.Model):
     __tablename__ = "items"
 
@@ -65,18 +66,26 @@ class Item(db.Model):
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     category = db.Column(db.String(50), nullable=False)
-    image_url = db.Column(db.String(200))    # legacy single image (kept for compatibility)
+    image_url = db.Column(db.String(200))  # legacy single image
 
     offer_type = db.Column(db.String(20))
     volume = db.Column(db.Float)
-    location = db.Column(db.String(200))
+
+    # -------------------------------
+    # NEW LOCATION FIELDS
+    # -------------------------------
+    state = db.Column(db.String(50))      # ex: "São Paulo"
+    city = db.Column(db.String(100))      # ex: "Campinas"
+    address = db.Column(db.String(300))   # free-text full address
+
     duration_days = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(20), default="ativo")
+
     owner = db.relationship("User", back_populates="items")
     offers = db.relationship("Offer", back_populates="item", cascade="all, delete-orphan")
 
-    # NEW: multiple images relationship
+    # multiple images
     images = db.relationship(
         "ItemImage",
         backref="item",
@@ -95,20 +104,22 @@ class Item(db.Model):
         return datetime.utcnow() >= self.expires_at
 
     def get_primary_image(self):
-        """Returns the main image (first sorted image) or fallback to legacy."""
         if self.images:
             return self.images[0].image_url
         return self.image_url
 
     def images_to_list(self, include_disabled: bool = False):
-        """Return images as list of dicts, with optional filtering."""
-        if include_disabled:
-            imgs = self.images
-        else:
-            imgs = [img for img in self.images if img.enabled]
-
+        imgs = self.images if include_disabled else [img for img in self.images if img.enabled]
         return [img.to_dict() for img in imgs]
 
+    def format_location(self):
+        parts = []
+        if self.city and self.state:
+            parts.append(f"{self.city}, {self.state}")
+        if self.address and self.address.strip():
+            parts.append(self.address.strip())
+        
+        return "  •  ".join(parts) or "Localização não informada"
 
     def __repr__(self):
         return f"<Item {self.title} ({self.status})>"
@@ -125,13 +136,17 @@ class Item(db.Model):
             "images": self.images_to_list(),
             "offer_type": self.offer_type,
             "volume": self.volume,
-            "location": self.location,
+
+            "state": self.state,
+            "city": self.city,
+            "address": self.address,
+            "location": self.format_location(),
+
             "duration_days": self.duration_days,
             "created_at": self.created_at.isoformat(),
             "status": self.status,
             "expires_at": self.expires_at.isoformat()
         }
-
         return data
 
     @staticmethod
@@ -139,6 +154,7 @@ class Item(db.Model):
         if item_id is None:
             return None
         return Item.query.get(item_id)
+
 
 class Offer(db.Model):
     __tablename__ = "offers"

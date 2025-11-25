@@ -1,3 +1,5 @@
+// helpers.js
+
 export function fillForm(item) {
   document.getElementById("title").value = item.title || "";
   document.getElementById("category").value = item.category || "";
@@ -5,7 +7,7 @@ export function fillForm(item) {
   document.getElementById("description").value = item.description || "";
   document.getElementById("offer_type").value = item.offer_type || "free";
   document.getElementById("volume").value = item.volume || "";
-  document.getElementById("location").value = item.location || "";
+  // location fields are filled by locationHandler.fillLocationFields()
 }
 
 export function disableForm(form) {
@@ -16,13 +18,16 @@ export function disableForm(form) {
 
 export function collectFormData() {
   return {
-    title: document.getElementById("title").value,
+    title: document.getElementById("title").value.trim(),
     category: document.getElementById("category").value,
     duration_days: parseInt(document.getElementById("duration_days").value),
-    description: document.getElementById("description").value,
+    description: document.getElementById("description").value.trim(),
     offer_type: document.getElementById("offer_type").value,
     volume: document.getElementById("volume").value || null,
-    location: document.getElementById("location").value,
+    // New location fields
+    state: document.getElementById("state").value.trim(),
+    city: document.getElementById("city").value.trim(),
+    address: document.getElementById("address").value.trim(),
   };
 }
 

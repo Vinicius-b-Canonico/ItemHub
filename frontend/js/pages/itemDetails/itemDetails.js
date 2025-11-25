@@ -11,6 +11,7 @@ import * as image from "./imageHandler.js";
 import * as helpers from "./helpers.js";
 import * as formHandler from "./formHandler.js";
 import * as offerHandler from "./offerHandler.js";
+import { initLocationHandler, fillLocationFields } from "./locationHandler.js"; // ← NEW
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadNavbar();
@@ -57,6 +58,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   pageTitle.textContent =
     mode === "create" ? "Create Item" : mode === "edit" ? "Edit Item" : "Item Details";
 
+  // ← NEW: Initialize location autocomplete (states + cities)
+  await initLocationHandler();
+
   let loadedItem = null;
 
   const imageState = {
@@ -80,8 +84,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (mode !== "create" && itemId) {
     try {
       loadedItem = await getItem(itemId);
-      helpers.fillForm(loadedItem);
+      helpers.fillForm(loadedItem);           // ← fills title, category, etc.
+      await fillLocationFields(loadedItem);         // ← fills state, city, address
 
+      // Images loading (unchanged)
       imageState.existingImages = [];
       imageState.existingImageOrder = [];
 
@@ -105,7 +111,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         saveBtn.classList.add("d-none");
         imageInput.classList.add("d-none");
         deleteBtn.classList.add("d-none");
-
         await offerHandler.injectOfferButtons(loadedItem, currentUser);
       } else {
         deleteBtn.classList.remove("d-none");
@@ -118,6 +123,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     image.renderAllImages(imageState, imageElements, mode);
   }
 
+  // Image navigation (unchanged)
   prevBtn.addEventListener("click", () => {
     if (imageState.currentIndex > 0) {
       imageState.currentIndex--;
@@ -148,6 +154,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Image upload (unchanged)
   imageInput.addEventListener("change", async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -188,6 +195,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Submit (unchanged – formHandler will now use new collectFormData)
   form.addEventListener("submit", (e) => formHandler.handleSubmit(e, mode, itemId, imageState));
 
   deleteBtn.addEventListener("click", () => formHandler.handleDelete(itemId));
