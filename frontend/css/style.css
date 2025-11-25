@@ -1,0 +1,120 @@
+/* ============================================= */
+/*               ItemHub – Global Styles         */
+/* ============================================= */
+
+:root {
+  --ih-primary: #2563eb;      /* Blue – trust, action */
+  --ih-primary-dark: #1d4ed8;
+  --ih-success: #10b981;      /* Green – free items */
+  --ih-warning: #f59e0b;      /* Amber – paid to take */
+  --ih-danger: #ef4444;       /* Red – paid items */
+  --ih-gray-100: #f3f4f6;
+  --ih-gray-200: #e5e7eb;
+  --ih-gray-600: #4b5563;
+  --ih-gray-800: #1f2937;
+  --ih-gray-900: #111827;
+  --ih-radius: 0.5rem;
+  --ih-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --ih-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ih-primary: #3b82f6;
+    --ih-gray-100: #1f2937;
+    --ih-gray-200: #374151;
+    --ih-gray-800: #e5e7eb;
+    --ih-gray-900: #f9fafb;
+  }
+}
+
+/* Base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--ih-gray-100);
+  color: var(--ih-gray-800);
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5 { font-weight: 700; color: var(--ih-gray-900); }
+.display-4 { font-size: 3rem; }
+.text-muted { color: var(--ih-gray-600) !important; }
+
+/* Buttons */
+.btn-primary {
+  background: var(--ih-primary);
+  border-color: var(--ih-primary);
+}
+.btn-primary:hover {
+  background: var(--ih-primary-dark);
+  border-color: var(--ih-primary-dark);
+}
+
+.btn-success { background: var(--ih-success); border-color: var(--ih-success); }
+.btn-warning { background: var(--ih-warning); border-color: var(--ih-warning); }
+.btn-danger  { background: var(--ih-danger);  border-color: var(--ih-danger); }
+
+/* Cards */
+.card {
+  border: none;
+  border-radius: var(--ih-radius);
+  box-shadow: var(--ih-shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--ih-shadow-lg);
+}
+.card-img-top {
+  border-top-left-radius: var(--ih-radius);
+  border-top-right-radius: var(--ih-radius);
+  object-fit: cover;
+}
+
+/* Badges – ItemHub style */
+.badge-free   { background: var(--ih-success); }
+.badge-pay    { background: var(--ih-danger); }
+.badge-paid-to-take { background: var(--ih-warning); color: #000; }
+
+/* Forms */
+.form-control, .form-select {
+  border-radius: var(--ih-radius);
+  padding: 0.65rem 0.9rem;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--ih-primary);
+  box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+}
+
+/* Utilities */
+.hover-shadow:hover {
+  box-shadow: var(--ih-shadow-lg);
+}
+.text-primary { color: var(--ih-primary) !important; }
+
+/* Navbar branding */
+.navbar-brand {
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: var(--ih-primary) !important;
+}
+.navbar-brand span {
+  color: var(--ih-gray-900);
+}
+
+/* Footer */
+footer {
+  background: var(--ih-gray-900);
+  color: white;
+  padding: 3rem 0;
+  margin-top: 5rem;
+}

@@ -1,91 +1,70 @@
 // =============================================================
-//  Reusable Error & Success Result Modals Component
+//  Modais de Erro e Sucesso – ItemHub (Visual Premium)
 // =============================================================
 
 let resultModalsInjected = false;
 let errorModalInstance = null;
 let successModalInstance = null;
 
-// -------------------------------------------------------------
-// Inject modal HTML into the page once
-// -------------------------------------------------------------
 function injectResultModalsIfNeeded() {
-  //if (resultModalsInjected) return;
+  if (resultModalsInjected) return;
 
   const container = document.getElementById("resultModalsContainer");
   if (!container) {
-    console.error("resultModalsContainer missing in this page.");
+    console.error("resultModalsContainer não encontrado na página.");
     return;
   }
 
   container.innerHTML = `
-    <!-- ========================================================= -->
-    <!-- ❌ ERROR MODAL -->
-    <!-- ========================================================= -->
-    <div class="modal fade" id="errorResultModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content border-danger shadow">
-
+    <!-- Erro -->
+    <div class="modal fade" id="errorResultModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0 overflow-hidden">
           <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title d-flex align-items-center gap-2">
-              <i class="bi bi-exclamation-triangle-fill"></i>
-              <span id="errorResultTitle">Error</span>
+            <h5 class="modal-title fw-bold d-flex align-items-center gap-3">
+              <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+              <span id="errorResultTitle">Erro</span>
             </h5>
-            <button type="button" class="btn-close btn-close-white"
-                    data-bs-dismiss="modal"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
           </div>
-
-          <div class="modal-body">
-            <div id="errorResultMessage" class="mb-3 text-dark"></div>
-
-            <!-- Action Button (optional) -->
-            <a id="errorResultActionBtn"
-               href="#"
-               class="btn btn-primary d-none">
+          <div class="modal-body py-4">
+            <div id="errorResultMessage" class="text-dark fs-5 text-center px-3"></div>
+            <a id="errorResultActionBtn" href="#" class="btn btn-outline-danger mt-4 d-none px-5">
+              Tentar Novamente
             </a>
           </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-secondary"
-                    data-bs-dismiss="modal">Close</button>
+          <div class="modal-footer justify-content-center border-0 pt-0">
+            <button type="button" class="btn btn-secondary px-5" data-bs-dismiss="modal">
+              Fechar
+            </button>
           </div>
-
         </div>
       </div>
     </div>
 
-
-    <!-- ========================================================= -->
-    <!-- ✅ SUCCESS MODAL (placeholder for now) -->
-    <!-- ========================================================= -->
-    <div class="modal fade" id="successResultModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content border-success shadow">
-
+    <!-- Sucesso -->
+    <div class="modal fade" id="successResultModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0 overflow-hidden">
           <div class="modal-header bg-success text-white">
-            <h5 class="modal-title d-flex align-items-center gap-2">
-              <i class="bi bi-check-circle-fill"></i>
-              <span id="successResultTitle">Success</span>
+            <h5 class="modal-title fw-bold d-flex align-items-center gap-3">
+              <i class="bi bi-check-circle-fill fs-4"></i>
+              <span id="successResultTitle">Sucesso!</span>
             </h5>
-            <button type="button" class="btn-close btn-close-white"
-                    data-bs-dismiss="modal"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
           </div>
-
-          <div class="modal-body">
-            <div id="successResultMessage" class="mb-3 text-dark"></div>
-
-            <!-- Placeholder CTA -->
-            <a id="successResultActionBtn"
-               href="#"
-               class="btn btn-primary d-none">
+          <div class="modal-body py-5 text-center">
+            <i class="bi bi-check-circle text-success fs-1 mb-4"></i>
+            <div id="successResultMessage" class="fs-5 text-dark px-3"></div>
+            <a id="successResultActionBtn" href="#" class="btn btn-success mt-4 px-5 d-none">
+              Continuar
             </a>
           </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-secondary"
-                    data-bs-dismiss="modal">Close</button>
+          <div class="modal-footer justify-content-center border-0 pt-0">
+            <button type="button" class="btn btn-outline-success px-5" data-bs-dismiss="modal">
+              OK
+            </button>
           </div>
-
         </div>
       </div>
     </div>
@@ -94,77 +73,56 @@ function injectResultModalsIfNeeded() {
   resultModalsInjected = true;
 }
 
-// -------------------------------------------------------------
-// Initialize Bootstrap modal instances
-// -------------------------------------------------------------
 export function initializeResultModals() {
   injectResultModalsIfNeeded();
 
-  errorModalInstance = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("errorResultModal")
-  );
-
-  successModalInstance = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("successResultModal")
-  );
+  errorModalInstance = new bootstrap.Modal(document.getElementById("errorResultModal"));
+  successModalInstance = new bootstrap.Modal(document.getElementById("successResultModal"));
 }
 
-// =============================================================
-//  ❌ SHOW ERROR MODAL
-// =============================================================
+// Erro
 export function showErrorModal({
-  title = "Error",
-  message = "An unexpected error occurred.",
+  title = "Erro",
+  message = "Ocorreu um erro inesperado.",
   actionText = null,
   actionHref = null
 } = {}) {
   initializeResultModals();
 
-  const titleEl   = document.getElementById("errorResultTitle");
-  const msgEl     = document.getElementById("errorResultMessage");
-  const actionBtn = document.getElementById("errorResultActionBtn");
+  document.getElementById("errorResultTitle").textContent = title;
+  document.getElementById("errorResultMessage").innerHTML = message;
 
-  titleEl.textContent = title;
-  msgEl.innerHTML = message;
-
-  // Handle CTA button
+  const btn = document.getElementById("errorResultActionBtn");
   if (actionText && actionHref) {
-    actionBtn.textContent = actionText;
-    actionBtn.href = actionHref;
-    actionBtn.classList.remove("d-none");
+    btn.textContent = actionText;
+    btn.href = actionHref;
+    btn.classList.remove("d-none");
   } else {
-    actionBtn.classList.add("d-none");
-    actionBtn.href = "#";
-    actionBtn.textContent = "";
+    btn.classList.add("d-none");
   }
 
   errorModalInstance.show();
 }
 
-// =============================================================
-//  ✅ SHOW SUCCESS MODAL (placeholder implementation)
-// =============================================================
+// Sucesso
 export function showSuccessModal({
-  title = "Success",
-  message = "Operation completed successfully.",
+  title = "Sucesso!",
+  message = "Operação realizada com sucesso.",
   actionText = null,
   actionHref = null
 } = {}) {
   initializeResultModals();
 
-  const titleEl   = document.getElementById("successResultTitle");
-  const msgEl     = document.getElementById("successResultMessage");
-  const actionBtn = document.getElementById("successResultActionBtn");
+  document.getElementById("successResultTitle").textContent = title;
+  document.getElementById("successResultMessage").innerHTML = message;
 
-  titleEl.textContent = title;
-  msgEl.innerHTML = message;
-
+  const btn = document.getElementById("successResultActionBtn");
   if (actionText && actionHref) {
-    actionBtn.textContent = actionText;
-    actionBtn.href = actionHref;
-    actionBtn.classList.remove("d-none");
+    btn.textContent = actionText;
+    btn.href = actionHref;
+    btn.classList.remove("d-none");
   } else {
-    actionBtn.classList.add("d-none");
+    btn.classList.add("d-none");
   }
 
   successModalInstance.show();

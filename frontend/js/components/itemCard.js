@@ -1,135 +1,88 @@
 import { normalizeImageUrl } from "../utils/misc.js";
 
-/**
- * Renders a reusable Bootstrap item card with optional compact mode.
- *
- * @param {Object} item - The item object from backend.
- * @param {Object|null} currentUser - The logged-in user (or null).
- * @param {boolean} [compact=false] - Compact mode hides nothing now; layout only.
- * @param {number} [existingOfferId=0] - If user already made an offer for this item.
- * @returns {string} HTML for the card
- */
 export function renderItemCard(item, currentUser, compact = false, existingOfferId = 0) {
   const isOwner = currentUser && item.owner_id === currentUser.id;
   const hasOffer = !isOwner && existingOfferId && existingOfferId > 0;
 
-  // -------------------------------
-  // CARD VISUAL STYLE
-  // -------------------------------
-  // Owner   → blue border
-  // Offer   → yellow border
-  // Default → normal card
-  let cardClass = "";
-  if (isOwner) cardClass = "border-primary border-2";
-  else if (hasOffer) cardClass = "border-warning border-2";
+  // Border visual feedback
+  let borderClass = "";
+  if (isOwner) borderClass = "border-primary border-3";
+  else if (hasOffer) borderClass = "border-warning border-3";
 
-  // --- Image ---
-  const imageHTML = item.image_url
-    ? `<img src="${normalizeImageUrl(item.image_url)}" class="img-fluid rounded-start" alt="${item.title}">`
-    : `<div class="bg-secondary text-white d-flex align-items-center justify-content-center"
-         style="height:100%; min-height:${compact ? "90px" : "150px"};">
-         No Image
+  // Image
+  const imageHTML = item.images?.[0]?.image_url || item.image_url
+    ? `<img src="${normalizeImageUrl(item.images?.[0]?.image_url || item.image_url)}" 
+            class="card-img-top" style="height:220px; object-fit:cover;" alt="${item.title}">`
+    : `<div class="bg-light d-flex align-items-center justify-content-center" style="height:220px;">
+         <i class="bi bi-image fs-1 text-muted"></i>
        </div>`;
 
-  // --- Status badge (optional) ---
-  const statusBadge = item.status
-    ? `<span class="badge bg-${item.status === "ativo" ? "success" : "secondary"}">${item.status}</span>`
-    : "";
+  // Offer type badge (Grátis / Venda / Pago pra levar)
+  const offerBadge = (() => {
+    switch (item.offer_type) {
+      case "free":         return '<span class="badge badge-free">Grátis</span>';
+      case "pay":          return '<span class="badge badge-pay">À Venda</span>';
+      case "paid_to_take": return '<span class="badge badge-paid-to-take">Pago pra Levar</span>';
+      default:             return '<span class="badge bg-secondary">Indefinido</span>';
+    }
+  })();
 
-  // -------------------------------
-  // BUTTONS (ALWAYS VISIBLE NOW)
-  // -------------------------------
+  // Action buttons
   const buttons = [];
 
-  // Always available
-  buttons.push(
-    `<button class="btn btn-sm btn-outline-secondary me-1"
-        data-action="view" data-id="${item.id}">
-        View Details
-     </button>`
-  );
-
   if (isOwner) {
-    // Owner tools
-    buttons.push(
-      `<button class="btn btn-sm btn-outline-primary me-1"
-          data-action="edit" data-id="${item.id}">
-          Edit
-       </button>`
-    );
-    buttons.push(
-      `<button class="btn btn-sm btn-outline-danger me-1"
-          data-action="delete" data-id="${item.id}">
-          Delete
-       </button>`
-    );
-    buttons.push(
-      `<button class="btn btn-sm btn-outline-success"
-          data-action="view-offers" data-id="${item.id}">
-          View Offers
-       </button>`
-    );
+    buttons.push(`
+      <button class="btn btn-sm btn-outline-primary" data-action="edit" data-id="${item.id}">
+        Editar
+      </button>
+      <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${item.id}">
+        Excluir
+      </button>
+      <button class="btn btn-sm btn-success" data-action="view-offers" data-id="${item.id}">
+        Ver Propostas
+      </button>
+    `);
   } else {
-    // Non-owner offer interactions
     if (hasOffer) {
-      buttons.push(
-        `<button class="btn btn-sm btn-outline-warning"
-            data-action="edit-offer"
-            data-offer-id="${existingOfferId}"
-            data-id="${item.id}">
-            View / Edit Offer
-         </button>`
-      );
+      buttons.push(`
+        <button class="btn btn-warning text-dark fw-bold" data-action="edit-offer" data-offer-id="${existingOfferId}" data-id="${item.id}">
+          Ver / Editar Proposta
+        </button>
+      `);
     } else {
-      buttons.push(
-        `<button class="btn btn-sm btn-outline-success"
-            data-action="make-offer" data-id="${item.id}">
-            Make Offer
-         </button>`
-      );
+      buttons.push(`
+        <button class="btn btn-success" data-action="make-offer" data-id="${item.id}">
+          Fazer Proposta
+        </button>
+      `);
     }
   }
 
-  const buttonsHTML = `
-    <div class="card-footer bg-transparent border-top-0 pb-2 text-center card-actions">
-      ${buttons.join("")}
-    </div>`;
+  buttons.unshift(`
+    <a href="itemDetails.html?mode=view&id=${item.id}" class="btn btn-sm btn-outline-secondary">
+      Ver Detalhes
+    </a>
+  `);
 
-  // -------------------------------
-  // FINAL CARD HTML
-  // -------------------------------
   return `
     <div class="col">
-      <div class="card shadow-sm item-card h-100 ${compact ? "p-1" : ""} ${cardClass}"
-           data-item-id="${item.id}">
-
-        <div class="row g-0 h-100">
-          <div class="col-4">${imageHTML}</div>
-
-          <div class="col-8 d-flex flex-column justify-content-between">
-            <div class="card-body pb-2 ${compact ? "py-1" : ""}">
-              
-              <h6 class="card-title mb-1 ${compact ? "small" : ""}">
-                ${item.title}
-              </h6>
-
-              <div class="d-flex justify-content-between align-items-center mb-1">
-                <small class="text-muted ${compact ? "small" : ""}">
-                  ${item.category || "Uncategorized"}
-                </small>
-                ${statusBadge}
-              </div>
-
-              <p class="text-muted mb-1 ${compact ? "small" : ""}">
-                ${item.location || "No location"}
-              </p>
-
-              <p class="mb-1 ${compact ? "small" : ""}">
-                ${item.description || "<em>No description</em>"}
-              </p>
+      <div class="card h-100 shadow-sm hover-shadow item-card ${borderClass}" data-item-id="${item.id}">
+        ${imageHTML}
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="card-title mb-0">${item.title}</h5>
+            ${offerBadge}
+          </div>
+          <p class="text-muted small mb-2">
+            ${item.location || "Localização não informada"}
+          </p>
+          <p class="card-text flex-grow-1 text-muted small">
+            ${item.description?.substring(0, 100) || "Sem descrição"}...
+          </p>
+          <div class="mt-auto pt-3 border-top">
+            <div class="d-flex flex-wrap gap-2 justify-content-center">
+              ${buttons.join("")}
             </div>
-
-            ${buttonsHTML}
           </div>
         </div>
       </div>
