@@ -143,23 +143,35 @@
     <div class="row g-5">
       <!-- Visualizador de Imagens -->
       <div class="col-lg-6">
-        <div class="card shadow-sm border-0 p-3">
+        <div class="card shadow-sm border-0 p-3 position-relative">
           <div id="imageViewer" class="image-viewer">
             <div id="prevBtn" class="viewer-arrow left" title="Anterior">
               <i class="bi bi-chevron-left"></i>
             </div>
             <img id="mainImage" class="main-image d-none" alt="Imagem do item">
             <div id="noImagePlaceholder" class="no-image-placeholder">
-              Sem imagens disponíveis
+              <div class="text-center py-5">
+                <i class="bi bi-images display-1 text-muted mb-4"></i>
+                <h5 class="text-muted mb-4">Nenhuma imagem adicionada</h5>
+                <button type="button" id="addImagesBtn" class="btn btn btn-primary btn-lg px-5">
+                  <i class="bi bi-plus-circle me-2"></i>Adicionar Imagens
+                </button>
+              </div>
             </div>
             <div id="nextBtn" class="viewer-arrow right" title="Próximo">
               <i class="bi bi-chevron-right"></i>
             </div>
+
+            <!-- Botão flutuante quando tem imagens -->
+            <button type="button" id="floatingAddBtn" class="btn btn-primary rounded-circle position-absolute shadow-lg d-none"
+                    style="bottom: 20px; right: 20px; width: 56px; height: 56px; font-size: 1.5rem; z-index: 20;">
+              <i class="bi bi-plus"></i>
+            </button>
           </div>
-          <div id="thumbnails" class="thumbnails"></div>
+
+          <div id="thumbnails" class="thumbnails mt-3"></div>
         </div>
       </div>
-
       <!-- Formulário -->
       <div class="col-lg-6">
         <div class="card shadow-sm border-0 p-4">

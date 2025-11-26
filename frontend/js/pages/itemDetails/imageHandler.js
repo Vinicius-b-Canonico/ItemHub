@@ -24,17 +24,46 @@ export function getImageAt(index, imageState) {
   }
 }
 
-export function renderAllImages(imageState, imageElements, mode, isEditable) {
+export function renderAllImages(imageState, imageElements, mode, isEditable = false) {
   const count = combinedCount(imageState);
+
+  // Controle do botão flutuante (se existir no DOM)
+  const floatingBtn = document.getElementById("floatingAddBtn");
+  if (floatingBtn) {
+    if (isEditable && count > 0) {
+      floatingBtn.classList.remove("d-none");
+    } else {
+      floatingBtn.classList.add("d-none");
+    }
+  }
+
   if (count === 0) {
     imageElements.mainImageEl.classList.add("d-none");
     imageElements.noImagePlaceholder.classList.remove("d-none");
-    imageElements.noImagePlaceholder.innerHTML = isEditable ? `
-      <div class="text-center py-4">
-        <i class="bi bi-cloud-upload fs-1 text-muted mb-3"></i>
-        <p class="text-muted">Arraste imagens aqui ou clique para adicionar</p>
-      </div>
-    ` : "Sem imagens disponíveis";
+    
+    if (isEditable) {
+      imageElements.noImagePlaceholder.innerHTML = `
+        <div class="text-center py-5">
+          <i class="bi bi-images display-1 text-muted mb-4"></i>
+          <h5 class="text-muted mb-4">Nenhuma imagem adicionada</h5>
+          <button type="button" id="addImagesBtn" class="btn btn-primary btn-lg px-5">
+            <i class="bi bi-plus-circle me-2"></i>Adicionar Imagens
+          </button>
+        </div>
+      `;
+      // Re-attach event listener se o botão foi recriado
+      const newBtn = document.getElementById("addImagesBtn");
+      if (newBtn && !newBtn.dataset.listenerAttached) {
+        newBtn.dataset.listenerAttached = "true";
+        newBtn.addEventListener("click", () => {
+          const fileInput = document.querySelector('input[type="file"][accept="image/*"]');
+          fileInput?.click();
+        });
+      }
+    } else {
+      imageElements.noImagePlaceholder.innerHTML = "Sem imagens disponíveis";
+    }
+
     imageElements.prevBtn.classList.add("disabled");
     imageElements.nextBtn.classList.add("disabled");
     imageElements.thumbnailsEl.innerHTML = "";
@@ -44,7 +73,9 @@ export function renderAllImages(imageState, imageElements, mode, isEditable) {
   imageElements.noImagePlaceholder.classList.add("d-none");
   imageElements.mainImageEl.classList.remove("d-none");
 
-  if (imageState.currentIndex >= count) imageState.currentIndex = Math.max(0, count - 1);
+  if (imageState.currentIndex >= count) {
+    imageState.currentIndex = Math.max(0, count - 1);
+  }
 
   renderMainImage(imageState, imageElements);
   renderThumbnails(imageState, imageElements, mode);
@@ -55,14 +86,14 @@ function renderMainImage(imageState, imageElements) {
   const img = getImageAt(imageState.currentIndex, imageState);
   imageElements.mainImageEl.style.opacity = 0;
   imageElements.mainImageEl.src = img.src;
-  imageElements.mainImageEl.onload = () => (imageElements.mainImageEl.style.opacity = 1);
-  imageElements.mainImageEl.classList.remove("d-none");
+  imageElements.mainImageEl.onload = () => {
+    imageElements.mainImageEl.style.opacity = 1;
+  };
 }
 
 function renderThumbnails(imageState, imageElements, mode) {
   imageElements.thumbnailsEl.innerHTML = "";
   const total = combinedCount(imageState);
-
   let dragSrcIndex = null;
 
   for (let i = 0; i < total; i++) {
@@ -101,7 +132,6 @@ function renderThumbnails(imageState, imageElements, mode) {
         if (dropIndex === dragSrcIndex) return;
 
         reorderImages(dragSrcIndex, dropIndex, imageState);
-
         renderAllImages(imageState, imageElements, mode, isEditableLocal);
       });
 

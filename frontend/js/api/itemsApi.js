@@ -197,27 +197,43 @@ export async function uploadItemImage(item_id, file) {
   return apiFormRequest(`/items/${item_id}/images`, "POST", formData);
 }
 
-
 // ======================================================
 // GET /api/items/ - List Items (Paginated)
+// Now supports multi-select states and cities
 // ======================================================
 export async function listItems({
   category = "",
   owner_id = null,
+  offer_type = "",
+  states = [],   // NEW: replaces "state"
+  cities = [],   // NEW: replaces "city"
   status = "ativo",
   page = 1,
   page_size = 20
 } = {}) {
 
-  v("listItems() called with:", { category, owner_id, status, page, page_size });
+  v("listItems() called with:", { category, owner_id, offer_type, states, cities, status, page, page_size });
 
   const params = {};
 
   if (category) params.category = category;
   if (owner_id !== null) params.owner_id = owner_id;
   if (status) params.status = status;
+  if (offer_type) params.offer_type = offer_type;
 
-  // Pagination params (always include)
+  // --- Normalize states ---
+  if (states && (Array.isArray(states) ? states.length : states)) {
+    const list = Array.isArray(states) ? states : [states];
+    params.states = list.join(",");    // "SP,RJ"
+  }
+
+  // --- Normalize cities ---
+  if (cities && (Array.isArray(cities) ? cities.length : cities)) {
+    const list = Array.isArray(cities) ? cities : [cities];
+    params.cities = list.join(",");    // "São Paulo,Rio de Janeiro"
+  }
+
+  // Pagination
   params.page = page;
   params.page_size = page_size;
 
@@ -225,7 +241,6 @@ export async function listItems({
 
   return apiGet("/items/", params);
 }
-
 
 // ======================================================
 // GET /api/items/<id> - Get Item

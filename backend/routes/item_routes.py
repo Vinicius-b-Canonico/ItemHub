@@ -249,24 +249,7 @@ def update_item(item_id):
 def list_items():
     """
     GET /api/items/
-    ----------------
-    Returns paginated list of active items.
-
-    Query params:
-    - category          (optional)
-    - owner_id          (optional)
-    - status            (default = "ativo")
-    - page              (default = 1)
-    - page_size         (default = 20)
-
-    Response:
-    {
-        "items": [...],
-        "page": 1,
-        "page_size": 20,
-        "total_items": 233,
-        "total_pages": 12
-    }
+    Supports multi-filter for states and cities.
     """
 
     # ------------------------------
@@ -274,6 +257,20 @@ def list_items():
     # ------------------------------
     category = request.args.get("category")
     owner_id = request.args.get("owner_id", type=int)
+    offer_type = request.args.get("offer_type")
+
+    # OLD (single values)
+    # state = request.args.get("state")
+    # city = request.args.get("city")
+
+    # NEW (lists)
+    raw_states = request.args.get("states", "")
+    raw_cities = request.args.get("cities", "")
+
+    # Normalize to lists
+    states = [s.strip() for s in raw_states.split(",") if s.strip()] if raw_states else []
+    cities = [c.strip() for c in raw_cities.split(",") if c.strip()] if raw_cities else []
+
     status = request.args.get("status", "ativo")
     page = request.args.get("page", default=1, type=int)
     page_size = request.args.get("page_size", default=20, type=int)
@@ -291,9 +288,16 @@ def list_items():
 
     if category:
         query = query.filter_by(category=category)
-
     if owner_id:
         query = query.filter_by(owner_id=owner_id)
+    if offer_type:
+        query = query.filter_by(offer_type=offer_type)
+
+    # NEW multi-location filters
+    if states:
+        query = query.filter(Item.state.in_(states))
+    if cities:
+        query = query.filter(Item.city.in_(cities))
 
     # ------------------------------
     # Pagination count (efficient)
@@ -313,7 +317,6 @@ def list_items():
     # Build response
     # ------------------------------
     results = [i.to_dict() for i in items]
-
     total_pages = (total_items + page_size - 1) // page_size  # ceiling division
 
     return jsonify({

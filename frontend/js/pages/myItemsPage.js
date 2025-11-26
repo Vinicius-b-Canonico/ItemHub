@@ -67,7 +67,6 @@ async function loadUserItems(currentUser) {
   }
 }
 
-// Event delegation (unchanged logic, only PT-BR confirm)
 itemsContainer.addEventListener("click", async e => {
   const btn = e.target.closest("[data-action]");
   if (!btn) return;
