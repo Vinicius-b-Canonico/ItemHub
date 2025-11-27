@@ -118,3 +118,26 @@ footer {
   padding: 3rem 0;
   margin-top: 5rem;
 }
+
+/* Chips pequenos ao lado do título */
+#selected-states-chips .chip-small,
+#selected-cities-chips .chip-small {
+  background: var(--ih-primary);
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+#selected-states-chips .chip-small button,
+#selected-cities-chips .chip-small button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}

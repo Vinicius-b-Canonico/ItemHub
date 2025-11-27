@@ -30,7 +30,7 @@ def check_expired_offers(app):
             offers = Offer.query.filter_by(item_id=item.id, status="active").all()
 
             if not offers:
-                item.status = "expired"
+                item.status = "espirado"
                 print(f"[OFFER CHECKER] Item {item.id} expired with no offers.")
             else:
                 # Select the "best" offer based on amount value

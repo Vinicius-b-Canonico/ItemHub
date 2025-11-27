@@ -128,8 +128,8 @@ def update_item(item_id):
         return jsonify({"error": "item not found"}), 404
     if item.owner_id != user_id:
         return jsonify({"error": "Not authorized"}), 403
-    if not item.status in ["ativo"]:
-        if item.status in ["cancelado"]:
+    if not item.is_valid:
+        if item.status in ["cancelado","espirado"]:
             return jsonify({"error": "este item foi permanentemente cancelado."}), 410
         return jsonify({"error": "o status deste item não permite mudanças"}), 404
 
@@ -244,67 +244,76 @@ def update_item(item_id):
     db.session.commit()
     return jsonify({"message": "Item updated"}), 200
 
-
 @item_bp.route("/", methods=["GET"])
 def list_items():
     """
     GET /api/items/
-    Supports multi-filter for states and cities.
+    Fully supports:
+      - Multi-category (comma-separated)
+      - Multi-state & multi-city
+      - Full-text search in title + description
+      - Proper pagination response
     """
-
     # ------------------------------
-    # Read query params
+    # Query parameters
     # ------------------------------
-    category = request.args.get("category")
+    categories = request.args.get("categories", "")
     owner_id = request.args.get("owner_id", type=int)
-    offer_type = request.args.get("offer_type")
-
-    # OLD (single values)
-    # state = request.args.get("state")
-    # city = request.args.get("city")
-
-    # NEW (lists)
+    offer_types = request.args.get("offer_type", "")
+    
     raw_states = request.args.get("states", "")
     raw_cities = request.args.get("cities", "")
-
-    # Normalize to lists
-    states = [s.strip() for s in raw_states.split(",") if s.strip()] if raw_states else []
-    cities = [c.strip() for c in raw_cities.split(",") if c.strip()] if raw_cities else []
-
+    
+    search = request.args.get("search", "").strip()
     status = request.args.get("status", "ativo")
-    page = request.args.get("page", default=1, type=int)
-    page_size = request.args.get("page_size", default=20, type=int)
+    
+    page = max(1, request.args.get("page", default=1, type=int))
+    page_size = min(100, max(1, request.args.get("page_size", default=20, type=int)))
 
-    # Safety: enforce bounds
-    if page < 1:
-        page = 1
-    if page_size < 1 or page_size > 100:
-        page_size = 20
-
+    # Normalize lists
+    categories = [c.strip() for c in categories.split(",") if c.strip()]
+    states = [s.strip() for s in raw_states.split(",") if s.strip()]
+    cities = [c.strip() for c in raw_cities.split(",") if c.strip()]
+    offer_types = [c.strip() for c in offer_types.split(",") if c.strip()] 
     # ------------------------------
-    # Base query with filters
+    # Base query
     # ------------------------------
     query = Item.query.filter_by(status=status)
 
-    if category:
-        query = query.filter_by(category=category)
-    if owner_id:
-        query = query.filter_by(owner_id=owner_id)
-    if offer_type:
-        query = query.filter_by(offer_type=offer_type)
+    if status == "ativo":
+        query = query.filter(Item.is_valid)
 
-    # NEW multi-location filters
+    if owner_id is not None:
+        query = query.filter_by(owner_id=owner_id)
+
+    if offer_types:
+        query = query.filter(Item.offer_type.in_(offer_types))
+
+    # Multi-category: item must have ANY of the selected categories
+    if categories:
+        query = query.filter(Item.category.in_(categories))
+
+    # Multi-state / multi-city
     if states:
         query = query.filter(Item.state.in_(states))
     if cities:
         query = query.filter(Item.city.in_(cities))
 
+    # Full-text search in title OR description
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                Item.title.ilike(search_pattern),
+                Item.description.ilike(search_pattern)
+            )
+        )
+
     # ------------------------------
-    # Pagination count (efficient)
+    # Execute with pagination
     # ------------------------------
     total_items = query.count()
 
-    # Sorting + pagination
     items = (
         query
         .order_by(Item.created_at.desc())
@@ -313,22 +322,15 @@ def list_items():
         .all()
     )
 
-    # ------------------------------
-    # Build response
-    # ------------------------------
-    results = [i.to_dict() for i in items]
-    total_pages = (total_items + page_size - 1) // page_size  # ceiling division
+    total_pages = (total_items + page_size - 1) // page_size
 
     return jsonify({
-        "items": results,
+        "items": [item.to_dict() for item in items],
         "page": page,
         "page_size": page_size,
         "total_items": total_items,
         "total_pages": total_pages
     }), 200
-
-
-
 
 @item_bp.route("/<int:item_id>", methods=["GET"])
 def get_item(item_id):

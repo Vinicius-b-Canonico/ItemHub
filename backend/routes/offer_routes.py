@@ -137,13 +137,16 @@ def get_my_offers():
     # Fetch offers
     offers: list[Offer] = (
         Offer.query
+            .join(Offer.item)                     # <-- REQUIRED
             .filter(
                 Offer.user_id == user_id,
-                Offer.status.in_(Offer.allowed_statuses())
+                Offer.status.in_(Offer.allowed_statuses()),
+                Item.is_valid                     # <-- use Item.is_valid, NOT Offer.item.is_valid
             )
             .order_by(Offer.created_at.desc())
             .all()
     )
+
 
     # Build response combining offer + item
     result = []

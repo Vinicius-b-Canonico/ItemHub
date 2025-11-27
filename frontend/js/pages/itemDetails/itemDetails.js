@@ -126,6 +126,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Última imagem adicionada vira a principal
+    //this could be cause of the issues
     imageState.currentIndex = image.combinedCount(imageState) - 1;
 
     image.renderAllImages(imageState, imageElements, mode, isEditable);

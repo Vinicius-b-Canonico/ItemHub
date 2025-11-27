@@ -8,6 +8,7 @@ def is_valid_state(state: str) -> bool:
     """
     Returns True if the given string exactly matches a state key.
     """
+    
     return state in BR_LOCATIONS
 
 

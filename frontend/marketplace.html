@@ -1,83 +1,275 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Marketplace - Trade Platform</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Marketplace • ItemHub</title>
+  <!-- ========================= -->
+  <!--        FAVICONS           -->
+  <!-- ========================= -->
+  <link rel="icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
 
+  <!-- Bootstrap + Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-  <link href="css/style.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" rel="stylesheet">
+
+  <!-- Seu CSS global -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <style>
+    /* === Ajustes gerais === */
+    #filters-sidebar { top: 80px; }
+    @media (min-width: 992px) {
+      #filters-sidebar { position: sticky; height: fit-content; }
+    }
+    .form-check-input:checked { background-color: var(--ih-primary); border-color: var(--ih-primary); }
+
+    /* === Accordion personalizado (sem bordas pesadas) === */
+    .filter-section .filter-header {
+      background: var(--ih-gray-100);
+      border: none;
+      border-radius: var(--ih-radius);
+      padding: 1rem 1.25rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .filter-section .filter-header:hover { background: var(--ih-gray-200); }
+    .filter-section .filter-header i { transition: transform 0.25s; }
+    .filter-section .filter-header[aria-expanded="true"] i { transform: rotate(180deg); }
+
+    /* === Chip Selector === */
+    .chip-selector { position: relative; }
+    .chip-selector .form-control {
+      border-radius: var(--ih-radius);
+      padding-right: 2.5rem;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      min-height: 42px;
+      padding: 0.25rem 0;
+    }
+    .chip {
+      background: var(--ih-primary);
+      color: white;
+      padding: 0.4rem 0.8rem;
+      border-radius: 2rem;
+      font-size: 0.875rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .chip button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.3rem;
+      line-height: 1;
+      padding: 0;
+      opacity: 0.9;
+    }
+    .chip button:hover { opacity: 1; }
+
+    /* === Sugestões de busca === */
+    .suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid var(--ih-gray-200);
+      border-radius: var(--ih-radius);
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 1050;
+      box-shadow: var(--ih-shadow-lg);
+      margin-top: 0.25rem;
+    }
+    .suggestions div {
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+    }
+    .suggestions div:hover { background: var(--ih-gray-100); }
+
+    /* === Pequenos ajustes === */
+    .badge-filter { font-size: 0.75rem; padding: 0.35em 0.65em; }
+    .offcanvas-backdrop.show { opacity: 0.5; }
+  </style>
 </head>
+<body class="pb-5">
 
-<body class="bg-light">
-  <div id="navbarContainer"></div>
+<div class="container-fluid py-4 py-md-5">
+  <div class="row g-4 g-xl-5">
 
-  <div class="container mt-4">
-    <h2 class="mb-3">Marketplace</h2>
+    <!-- ========== SIDEBAR (Desktop) ========== -->
+    <div class="col-lg-3">
+      <div id="filters-sidebar" class="bg-white rounded shadow-sm p-4">
+        <h5 class="mb-4 fw-bold">Filtros</h5>
+        <form id="filters-form">
 
-    <!-- Filters -->
-    <form id="filterForm" class="card p-3 mb-4 shadow-sm">
-      <div class="row g-3 align-items-end">
+          <!-- Tipo de Oferta -->
+          <div class="filter-section mb-3">
+            <button class="filter-header w-100 text-start d-flex justify-content-between align-items-center" 
+                    type="button" data-bs-toggle="collapse" data-bs-target="#collapse-type">
+              <span>Tipo de Oferta</span>
+              <i class="ti ti-chevron-down"></i>
+            </button>
+            <div class="collapse show" id="collapse-type">
+              <div class="pt-3">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" value="free" id="type-free">
+                  <label class="form-check-label" for="type-free">
+                    <span class="badge badge-free badge-filter me-2">GRÁTIS</span> Grátis
+                  </label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" value="pay" id="type-pay">
+                  <label class="form-check-label" for="type-pay">
+                    <span class="badge badge-pay badge-filter me-2">À VENDA</span> À Venda
+                  </label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" value="paid_to_take" id="type-paid_to_take">
+                  <label class="form-check-label" for="type-paid_to_take">
+                    <span class="badge badge-paid-to-take badge-filter me-2">PAGO PRA LEVAR</span> Pago pra Levar
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <div class="col-md-3">
-          <label class="form-label">Category</label>
-          <select name="category" class="form-select">
-            <option value="">Loading categories...</option>
-          </select>
-        </div>
+          <!-- Categorias -->
+          <div class="filter-section mb-3">
+            <button class="filter-header w-100 text-start d-flex justify-content-between align-items-center" 
+                    type="button" data-bs-toggle="collapse" data-bs-target="#collapse-categories">
+              <span>Categorias</span>
+              <i class="ti ti-chevron-down"></i>
+            </button>
+            <div class="collapse show" id="collapse-categories">
+              <div class="pt-3" id="categories-container">
+                <small class="text-muted">Carregando...</small>
+              </div>
+            </div>
+          </div>
 
-        <div class="col-md-3">
-          <label class="form-label">Offer Type</label>
-          <select name="offer_type" class="form-select">
-            <option value="">All</option>
-            <option value="free">Free to Take</option>
-            <option value="pay">Pay to Take</option>
-            <option value="paid_to_take">Paid to Take</option>
-          </select>
-        </div>
+          <!-- Localização (NOVA VERSÃO FINAL) -->
+          <div class="filter-section mb-3">
+            <button class="filter-header w-100 text-start d-flex justify-content-between align-items-center" 
+                    type="button" data-bs-toggle="collapse" data-bs-target="#collapse-location">
+              <span>Localização</span>
+              <i class="ti ti-chevron-down"></i>
+            </button>
+            <div class="collapse show" id="collapse-location">
+              <div class="pt-3">
 
-        <div class="col-md-4">
-          <label class="form-label">Search</label>
-          <input type="text" name="search" class="form-control" placeholder="Search by title or description">
-        </div>
+                <!-- Todo o Brasil -->
+                <div class="form-check mb-4">
+                  <input class="form-check-input" type="checkbox" id="nationwide">
+                  <label class="form-check-label fw-bold text-primary" for="nationwide">
+                    Todo o Brasil
+                  </label>
+                </div>
 
-        <div class="col-md-1 d-grid">
-          <button type="submit" class="btn btn-primary">Filter</button>
-        </div>
+                <!-- Estados -->
+                <div class="mb-4">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label fw-medium mb-0">Estados</label>
+                    <div id="selected-states-chips" class="d-flex flex-wrap gap-2"></div>
+                  </div>
+                  <div class="position-relative">
+                    <input type="text" class="form-control" placeholder="Digite o nome do estado..." id="state-search" autocomplete="off">
+                    <div id="state-suggestions" class="suggestions d-none"></div>
+                  </div>
+                </div>
 
-        <!-- 🔹 CLEAR FILTERS -->
-        <div class="col-md-1 d-grid">
-          <button type="button" id="clearFiltersBtn" class="btn btn-secondary">
-            Clear
-          </button>
-        </div>
+                <!-- Filtrar apenas cidades específicas (aparece só se tiver estado) -->
+                <div id="specific-cities-wrapper" class="d-none mb-4">
+                  <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="filter-specific-cities">
+                    <label class="form-check-label fw-medium" for="filter-specific-cities">
+                      Filtrar apenas cidades específicas
+                    </label>
+                  </div>
 
+                  <div id="cities-input-wrapper" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <label class="form-label fw-medium mb-0">Cidades</label>
+                      <div id="selected-cities-chips" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+                    <div class="position-relative">
+                      <input type="text" class="form-control" placeholder="Digite o nome da cidade..." id="city-search" autocomplete="off">
+                      <div id="city-suggestions" class="suggestions d-none"></div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+          <!-- Botões -->
+          <div class="d-flex flex-column gap-2 mt-4">
+            <button type="submit" class="btn btn-primary fw-medium">Aplicar Filtros</button>
+            <button type="button" id="clear-filters" class="btn btn-outline-secondary">Limpar Tudo</button>
+          </div>
+        </form>
       </div>
-    </form>
-
-    <!-- Items Grid -->
-    <div id="itemsContainer" class="row"></div>
-
-    <!-- 🔹 PAGINATION BAR -->
-    <div id="paginationContainer" class="d-flex justify-content-center mt-4">
-      <nav>
-        <ul id="paginationControls" class="pagination">
-          <!-- Filled by marketplacePage.js -->
-        </ul>
-      </nav>
     </div>
 
-    <div id="alertContainer" class="mt-3"></div>
+    <!-- ========== CONTEÚDO PRINCIPAL ========== -->
+    <div class="col-lg-9">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <button class="btn btn-outline-primary d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#mobileFilters">
+          Filtros
+        </button>
+        <div id="results-info" class="text-muted fw-medium">Carregando...</div>
+        <select id="sort-select" class="form-select" style="width:auto;">
+          <option value="newest">Mais recentes</option>
+          <option value="distance">Mais próximos</option>
+          <option value="relevance">Mais relevantes</option>
+        </select>
+      </div>
+
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-3 row-cols-xl-4 g-4" id="items-grid"></div>
+
+      <div id="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" style="width:3rem;height:3rem;"></div>
+      </div>
+      <div id="no-results" class="text-center py-5 text-muted d-none">
+        <p class="mt-3 fs-5">Nenhum item encontrado.</p>
+      </div>
+
+      <nav class="mt-5">
+        <ul class="pagination justify-content-center" id="pagination"></ul>
+      </nav>
+    </div>
   </div>
+</div>
 
-  <!-- Placeholder for reusable modal component -->
-  <div id="offersModalContainer"></div>
-  <div id="resultModalContainer"></div>
+<!-- Offcanvas Mobile -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="mobileFilters">
+  <div class="offcanvas-header border-bottom">
+    <h5 class="offcanvas-title fw-bold">Filtros</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body" id="mobile-filters-content"></div>
+  <div class="offcanvas-footer border-top p-3">
+    <button id="apply-mobile-filters" class="btn btn-primary w-100 fw-medium">Ver Resultados</button>
+  </div>
+</div>
 
+<!-- Modals -->
+<div id="offersModalContainer"></div>
+<div id="resultModalsContainer"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" src="js/components/resultModals.js"></script>
-  <script type="module" src="js/pages/marketplacePage.js"></script>
-  
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="js/pages/marketplace/marketplace.js"></script>
 </body>
 </html>

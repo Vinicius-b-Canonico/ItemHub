@@ -30,7 +30,7 @@ services:
     command: >
       sh -c "
         echo 'Waiting for database...' &&
-        sleep 15 &&
+        sleep 5 &&
         flask db upgrade || (flask db init &&
         flask db migrate -m 'initial migration' &&
         flask db upgrade) &&

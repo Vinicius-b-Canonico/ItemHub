@@ -202,45 +202,70 @@ export async function uploadItemImage(item_id, file) {
 // Now supports multi-select states and cities
 // ======================================================
 export async function listItems({
-  category = "",
+  categories = [],       
   owner_id = null,
   offer_type = "",
-  states = [],   // NEW: replaces "state"
-  cities = [],   // NEW: replaces "city"
+  states = [],          
+  cities = [],          
+  search = "",
   status = "ativo",
   page = 1,
   page_size = 20
 } = {}) {
+  v("listItems() called with:", { categories, owner_id, offer_type, states, cities, search, status, page, page_size });
 
-  v("listItems() called with:", { category, owner_id, offer_type, states, cities, status, page, page_size });
+  const params = new URLSearchParams();
 
-  const params = {};
-
-  if (category) params.category = category;
-  if (owner_id !== null) params.owner_id = owner_id;
-  if (status) params.status = status;
-  if (offer_type) params.offer_type = offer_type;
-
-  // --- Normalize states ---
-  if (states && (Array.isArray(states) ? states.length : states)) {
-    const list = Array.isArray(states) ? states : [states];
-    params.states = list.join(",");    // "SP,RJ"
+  // Pagination & basics
+  params.append("page", page);
+  params.append("page_size", page_size);
+  if (status) params.append("status", status);
+  if (search?.trim()) params.append("search", search.trim());
+  if (owner_id !== null && owner_id !== undefined) {
+    params.append("owner_id", owner_id);
+  }
+  if (offer_type) {
+    params.append("offer_type", offer_type);
   }
 
-  // --- Normalize cities ---
-  if (cities && (Array.isArray(cities) ? cities.length : cities)) {
-    const list = Array.isArray(cities) ? cities : [cities];
-    params.cities = list.join(",");    // "São Paulo,Rio de Janeiro"
+  // === CATEGORIES: now properly handled as array ===
+  const catList = Array.isArray(categories)
+    ? categories.filter(Boolean)           // remove empty/falsy
+    : typeof categories === "string" && categories
+      ? categories.split(",").map(c => c.trim()).filter(Boolean)
+      : [];
+
+  if (catList.length > 0) {
+    params.append("categories", catList.join(","));  // → categories=1,2,7
   }
 
-  // Pagination
-  params.page = page;
-  params.page_size = page_size;
+  // === STATES ===
+  const stateList = Array.isArray(states)
+    ? states.filter(Boolean)
+    : typeof states === "string" && states
+      ? states.split(",").map(s => s.trim()).filter(Boolean)
+      : [];
 
-  v("Final GET parameters:", params);
+  if (stateList.length > 0) {
+    params.append("states", stateList.join(","));
+  }
 
-  return apiGet("/items/", params);
+  // === CITIES ===
+  const cityList = Array.isArray(cities)
+    ? cities.filter(Boolean)
+    : typeof cities === "string" && cities
+      ? cities.split(",").map(c => c.trim()).filter(Boolean)
+      : [];
+
+  if (cityList.length > 0) {
+    params.append("cities", cityList.join(","));
+  }
+
+  v("Final URL params:", Object.fromEntries(params));
+
+  return apiGet(`/items/?${params.toString()}`);
 }
+
 
 // ======================================================
 // GET /api/items/<id> - Get Item

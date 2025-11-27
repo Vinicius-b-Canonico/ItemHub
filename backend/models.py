@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import func, text
 
 db = SQLAlchemy()
 
@@ -104,6 +106,25 @@ class Item(db.Model):
     def is_expired(self):
         return datetime.utcnow() >= self.expires_at
 
+    @hybrid_property
+    def is_valid(self):
+        """Python version used after objects are loaded."""
+        return (
+            self.status in ["pendendo_confirmacao", "ativo"]
+            and datetime.utcnow() < self.created_at + timedelta(days=self.duration_days)
+        )
+
+    @is_valid.expression
+    def is_valid(cls):
+        """SQL version executed inside WHERE queries (PostgreSQL)."""
+        return (
+            cls.status.in_(["pendendo_confirmacao", "ativo"])
+            &
+            (
+                func.now()
+                < (cls.created_at + (cls.duration_days * text("INTERVAL '1 day'")))
+            )
+        )
     
     def get_primary_image(self):
         if self.images:
