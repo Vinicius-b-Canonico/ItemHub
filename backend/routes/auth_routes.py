@@ -20,7 +20,7 @@ def register():
         "username": "john_doe",
         "email": "john@example.com",
         "password": "secret123",
-        "full_name": "John Doe"   // optional
+        "full_name": "John Doe"   // not being sent by frontend yet
     }
     ```
 

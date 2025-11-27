@@ -4,11 +4,11 @@ from flask import Blueprint, request, jsonify, current_app, send_from_directory
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 from models import db, Item, User, ItemImage
-from utils.image_processing import save_processed_image
+from utils.image_processing import save_uploaded_image
 import json
 import requests
 from utils.location import is_valid_state, is_valid_city
-
+from config import Config
 
 item_bp = Blueprint("item", __name__)
 
@@ -16,7 +16,7 @@ item_bp = Blueprint("item", __name__)
 
 def allowed_file(filename):
     """Return True if file has an allowed image extension."""
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in current_app.config["ALLOWED_EXTENSIONS"]
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in Config.ALLOWED_EXTENSIONS
 
 
 # ---------- Routes ----------
@@ -69,7 +69,7 @@ def create_item():
         if not f or not allowed_file(f.filename):
             return jsonify({"error": "Invalid file type"}), 415
 
-        filename = save_processed_image(
+        filename = save_uploaded_image(
             file_storage=f,
             upload_folder=current_app.config["UPLOAD_FOLDER"]
         )
@@ -220,7 +220,7 @@ def update_item(item_id):
         if not f or not allowed_file(f.filename):
             return jsonify({"error": "Invalid file type"}), 415
 
-        filename = save_processed_image(
+        filename = save_uploaded_image(
             file_storage=f,
             upload_folder=current_app.config["UPLOAD_FOLDER"]
         )
@@ -414,7 +414,7 @@ def upload_item_image(item_id):
         return jsonify({"error": "Invalid file type"}), 415
 
     # Save file to disk using your existing helper
-    filename = save_processed_image(
+    filename = save_uploaded_image(
         file_storage=file,
         upload_folder=current_app.config["UPLOAD_FOLDER"]
     )
@@ -449,18 +449,48 @@ def get_item_categories():
     **Response:**
     - 200 OK with {"categories": [...]}
     """
+    
     categories = [
-        "Electronics",
-        "Furniture",
-        "Clothing",
-        "Books",
-        "Tools",
-        "Toys",
-        "Food",
-        "Appliances",
-        "Sports",
-        "Miscellaneous"
+        "Eletrônicos",
+        "Informática",
+        "Celulares e Acessórios",
+        "Games",
+        "Eletrodomésticos",
+        "Móveis",
+        "Decoração",
+        "Roupas",
+        "Calçados",
+        "Acessórios de Moda",
+        "Esporte e Lazer",
+        "Livros",
+        "Papelaria",
+        "Ferramentas",
+        "Construção",
+        "Automotivo",
+        "Bebês e Infantil",
+        "Brinquedos",
+        "Pet Shop",
+        "Saúde e Beleza",
+        "Perfumaria",
+        "Cozinha",
+        "Alimentos e Bebidas",
+        "Jardinagem",
+        "Colecionáveis",
+        "Instrumentos Musicais",
+        "Arte e Artesanato",
+        "Fotografia",
+        "Som e Áudio",
+        "Filmes e Séries",
+        "Casa Inteligente",
+        "Camping e Aventura",
+        "Relógios",
+        "Joias",
+        "Puzzles e Board Games",
+        "Papelaria e Escritório",
+        "Outros"
     ]
+
+
     return jsonify({"categories": categories}), 200
 
 
