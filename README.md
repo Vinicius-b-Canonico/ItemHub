@@ -3,9 +3,9 @@
 Protótipo simples de marketplace para doar/vender/se livrar de itens. Desenvolvido em menos de 1 mês. Tudo foi self-hosted e mantido em localhost durante o desenvolvimento.
 
 Principais arquivos e símbolos
-- Backend main file:
+- Backend arquivo principal:
   [backend/app.py](backend/app.py)  
-- Models principais:
+- Modelos:
   [`User`](backend/models.py),
   [`Item`](backend/models.py),
   [`ItemImage`](backend/models.py),
@@ -17,8 +17,9 @@ Principais arquivos e símbolos
   - Locations: [backend/routes/location_routes.py](backend/routes/location_routes.py)
 - Config & upload: [backend/config.py](backend/config.py)
 - Infra/Docker: [backend/Dockerfile](backend/Dockerfile), [backend/docker-compose.yml](backend/docker-compose.yml)
-- Frontend (páginas principais): [frontend/index.html](frontend/index.html), [frontend/myItems.html](frontend/myItems.html), [frontend/login.html](frontend/login.html), [frontend/register.html](frontend/register.html), [frontend/itemDetails.html](frontend/itemDetails.html), [frontend/marketplace.html](frontend/marketplace.html)
-- Frontend assets & scripts: [frontend/js](frontend/js) e [frontend/css](frontend/css)
+- Frontend (páginas principais): [frontend/index.html](frontend/index.html), [frontend/myItems.html](frontend/myItems.html), [frontend/login.html](frontend/login.html), [frontend/register.html](frontend/register.html), [frontend/itemDetails.html](frontend/itemDetails.html), [frontend/marketplace.html](frontend/marketplace.html), [frontend/dashboard.html](frontend/dashboard.html)  
+
+
 
 Stack tecnológico
 - Backend: Python, Flask + Flask-JWT-Extended, SQLAlchemy, Gunicorn
@@ -52,16 +53,24 @@ Observações / Limitações
 - Ainda sem cache no backend
 
 
-Como rodar (local)
-1. Ter Docker instalado.  
-2. Baixar/clonar o projeto e abrir terminal no diretório raiz.  
-3. Navegar para a pasta do backend
-4. Subir a infra usando: docker compose up --build
-    O compose cria o serviço de banco (Postgres) e o backend (Flask/Gunicorn).
-    O frontend é servido via container nginx conforme o compose.
+
+Como rodar localmente
+1. Instale o Docker (e Docker Compose).  
+2. Clone / baixe o repositório e abra um terminal na raiz do projeto.  
+3. Entre na pasta do backend:
+   ```sh
+   cd backend
+   ```
+4. Suba os containers:
+   ```sh
+   docker compose up --build
+   ```
+   - O compose cria o serviço do banco (Postgres), o backend (Flask/Gunicorn) e serve o frontend via nginx conforme configuração.
+
+
 Notas de desenvolvimento
 
-- Uploads são armazenados em uploads (mapeado no compose).
+- Uploads são armazenados em uploads (mapeado no docker-compose.yml).
 - Configurações de ambiente estão em .env e parte delas é carregada por config.py.
 - O servidor no container backend usa Gunicorn conforme Dockerfile.
 
