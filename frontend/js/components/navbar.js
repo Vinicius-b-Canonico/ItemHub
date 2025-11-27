@@ -15,8 +15,10 @@ export async function loadNavbar() {
   navbar.innerHTML = `
     <div class="container-fluid">
       <!-- Brand -->
-      <a class="navbar-brand fw-bold fs-4" href="/">
-        Item<span class="text-primary">Hub</span>
+      <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+        <img src="/favicon.svg" alt="ItemHub Logo"
+            style="height:36px; width:auto;">
+        <span class="fw-bold fs-4">Item<span class="text-primary">Hub</span></span>
       </a>
 
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
