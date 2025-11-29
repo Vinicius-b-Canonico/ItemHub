@@ -1,4 +1,4 @@
-# ItemHub — Plataforma de Troca/Doação (Protótipo)
+# ItemHub — Plataforma de Venda/Doação (Protótipo)
 
 Protótipo simples de marketplace para doar/vender/se livrar de itens. Desenvolvido em menos de 1 mês. Tudo foi self-hosted e mantido em localhost durante o desenvolvimento.
 

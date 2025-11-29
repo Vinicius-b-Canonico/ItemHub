@@ -1,86 +1,98 @@
 // js/pages/marketplace/marketplace.js
 import { listItems, getItemCategories, deleteItem } from "../../api/itemsApi.js";
 import { getStates, getCitiesForStates } from "../../api/locationsApi.js";
-import { getOffersForItem } from "../../api/offersApi.js"; 
+import { getOffersForItem, getMyOffers } from "../../api/offersApi.js";
 import { getCurrentUser } from "../../api/authApi.js";
 import { loadNavbar } from "../../components/navbar.js";
 import { renderItemCard } from "../../components/itemCard.js";
 import { openViewOffersModal, openOfferDetailsModal } from "../../components/offersModals.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // ==============================================================
-  // 1. Navbar + Usuário
-  // ==============================================================
   loadNavbar();
   let currentUser = null;
   try {
     currentUser = await getCurrentUser();
   } catch (_) {}
+  let userOfferIdByItemId = {};
+  async function loadUserOffersMap() {
+    if (!currentUser) return;
+
+    try {
+      const myOffers = await getMyOffers();
+      userOfferIdByItemId = {};
+
+      myOffers.forEach(entry => {
+        if (entry.item && entry.offer) {
+          userOfferIdByItemId[entry.item.id] = entry.offer.id;
+        }
+      });
+    } catch (err) {
+      console.warn("Não foi possível carregar as ofertas do usuário (normal em dev):", err);
+    }
+  }
 
   // ==============================================================
-  // 2. Referências DOM
+  // DOM References
   // ==============================================================
   const DOM = {
-    form: document.getElementById("filters-form"),
     grid: document.getElementById("items-grid"),
     loading: document.getElementById("loading"),
     noResults: document.getElementById("no-results"),
     resultsInfo: document.getElementById("results-info"),
     pagination: document.getElementById("pagination"),
     sortSelect: document.getElementById("sort-select"),
+    applyFiltersBtn: document.querySelector("#filters-form button[type='submit']"),
+    clearFiltersBtn: document.getElementById("clear-filters"),
+    applyMobileBtn: document.getElementById("apply-mobile-filters"),
 
-    // Location
+    // Filtros
+    searchInput: document.getElementById("search-input"),
     nationwide: document.getElementById("nationwide"),
     stateSearch: document.getElementById("state-search"),
     citySearch: document.getElementById("city-search"),
+    categorySearch: document.getElementById("category-search"),
+
     selectedStatesChips: document.getElementById("selected-states-chips"),
     selectedCitiesChips: document.getElementById("selected-cities-chips"),
+    selectedCategoriesChips: document.getElementById("selected-categories-chips"),
+
     stateSuggestions: document.getElementById("state-suggestions"),
     citySuggestions: document.getElementById("city-suggestions"),
+    categorySuggestions: document.getElementById("category-suggestions"),
+
     specificCitiesWrapper: document.getElementById("specific-cities-wrapper"),
     filterSpecificCities: document.getElementById("filter-specific-cities"),
     citiesInputWrapper: document.getElementById("cities-input-wrapper"),
-
-    categoriesContainer: document.getElementById("categories-container"),
-    mobileContent: document.getElementById("mobile-filters-content"),
-    applyMobile: document.getElementById("apply-mobile-filters"),
   };
 
   let currentPage = 1;
 
   // Dados
-  let allStates = [];                    // ["São Paulo", "Rio de Janeiro", ...]
-  let citiesByState = new Map();         // "São Paulo" → ["Campinas", "Santos", ...]
-  const selectedStates = new Set();      // Set<string>
-  const selectedCities = new Set();      // Set<string>
+  let allStates = [];
+  let allCategories = []; // [{ id, name }]
+  const selectedStates = new Set();
+  const selectedCities = new Set();
+  const selectedCategories = new Set();
 
   // ==============================================================
-  // 3. Carregamento inicial
+  // Carregamento inicial
   // ==============================================================
   await Promise.all([loadStates(), loadCategories()]);
 
   async function loadStates() {
-    allStates = await getStates(); // → array de strings
+    allStates = await getStates();
   }
 
   async function loadCategories() {
     const cats = await getItemCategories();
-    DOM.categoriesContainer.innerHTML = "";
-    cats.forEach(cat => {
-      const value = typeof cat === "object" ? cat.id || cat : cat;
-      const name = typeof cat === "object" ? cat.name || cat : cat;
-      const div = document.createElement("div");
-      div.className = "form-check mb-2";
-      div.innerHTML = `
-        <input class="form-check-input" type="checkbox" value="${value}" id="cat-${value}">
-        <label class="form-check-label" for="cat-${value}">${name}</label>
-      `;
-      DOM.categoriesContainer.appendChild(div);
-    });
+    allCategories = cats.map(cat => ({
+      id: typeof cat === "object" ? cat.id || cat : cat,
+      name: typeof cat === "object" ? cat.name || cat : cat
+    }));
   }
 
   // ==============================================================
-  // 4. Chips pequenos (ao lado do título)
+  // Chips
   // ==============================================================
   function addSmallChip(container, text, value, type) {
     const chip = document.createElement("span");
@@ -92,6 +104,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function renderChips() {
     DOM.selectedStatesChips.innerHTML = "";
     DOM.selectedCitiesChips.innerHTML = "";
+    DOM.selectedCategoriesChips.innerHTML = "";
 
     selectedStates.forEach(state => {
       const short = state.length > 10 ? state.substring(0, 8) + "..." : state;
@@ -102,101 +115,154 @@ document.addEventListener("DOMContentLoaded", async () => {
       const short = city.length > 12 ? city.substring(0, 10) + "..." : city;
       addSmallChip(DOM.selectedCitiesChips, short, city, "city");
     });
+
+    selectedCategories.forEach(catId => {
+      const cat = allCategories.find(c => c.id === catId);
+      if (cat) {
+        const short = cat.name.length > 12 ? cat.name.substring(0, 10) + "..." : cat.name;
+        addSmallChip(DOM.selectedCategoriesChips, short, catId, "category");
+      }
+    });
   }
 
   // ==============================================================
-  // 5. Estados – busca + chip
+  // FUNÇÃO CENTRALIZADA DE AUTOCOMPLETE (versão final com acentos + relevância)
   // ==============================================================
-  DOM.stateSearch.addEventListener("input", () => {
-    const term = DOM.stateSearch.value.trim().toLowerCase();
-    DOM.stateSuggestions.innerHTML = "";
+  function normalize(str) {
+    return str
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  }
 
-    if (!term) {
-      DOM.stateSuggestions.classList.add("d-none");
-      return;
-    }
+  function setupAutocomplete({
+    inputEl,
+    suggestionsEl,
+    getCandidates,
+    isSelected,
+    getValue,
+    getLabel,
+    onSelect,
+    maxSuggestions = 10
+  }) {
+    inputEl.addEventListener("input", async () => {
+      const term = inputEl.value.trim();
+      suggestionsEl.innerHTML = "";
 
-    const filtered = allStates
-      .filter(s => s.toLowerCase().includes(term))
-      .filter(s => !selectedStates.has(s))
-      .slice(0, 10);
+      if (!term) {
+        suggestionsEl.classList.add("d-none");
+        return;
+      }
 
-    if (filtered.length === 0) {
-      DOM.stateSuggestions.classList.add("d-none");
-      return;
-    }
+      const normalizedTerm = normalize(term);
+      const candidates = await getCandidates();
 
-    filtered.forEach(state => {
-      const div = document.createElement("div");
-      div.textContent = state;
-      div.onclick = () => {
-        selectedStates.add(state);
-        DOM.stateSearch.value = "";
-        DOM.stateSuggestions.classList.add("d-none");
-        DOM.specificCitiesWrapper.classList.remove("d-none"); // mostra opção de cidades
-        renderChips();
-      };
-      DOM.stateSuggestions.appendChild(div);
+      let filtered = candidates
+        .filter(item => {
+          const label = typeof item === "string" ? item : (item.name || "");
+          return normalize(label).includes(normalizedTerm);
+        })
+        .filter(item => !isSelected(item));
+
+      // Prioriza quem começa com o termo (ex: "sa" → São Paulo antes de Osasco)
+      filtered.sort((a, b) => {
+        const labelA = normalize(typeof a === "string" ? a : a.name || "");
+        const labelB = normalize(typeof b === "string" ? b : b.name || "");
+
+        const startsWithA = labelA.startsWith(normalizedTerm);
+        const startsWithB = labelB.startsWith(normalizedTerm);
+
+        if (startsWithA && !startsWithB) return -1;
+        if (!startsWithA && startsWithB) return 1;
+        return 0;
+      });
+
+      filtered = filtered.slice(0, maxSuggestions);
+
+      if (filtered.length === 0) {
+        suggestionsEl.classList.add("d-none");
+        return;
+      }
+
+      filtered.forEach(item => {
+        const div = document.createElement("div");
+        div.textContent = getLabel(item);
+        div.onclick = () => {
+          onSelect(item);
+          inputEl.value = "";
+          suggestionsEl.classList.add("d-none");
+        };
+        suggestionsEl.appendChild(div);
+      });
+
+      suggestionsEl.classList.remove("d-none");
     });
 
-    DOM.stateSuggestions.classList.remove("d-none");
-  });
+    // Fecha ao clicar fora
+    document.addEventListener("click", e => {
+      if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target)) {
+        suggestionsEl.classList.add("d-none");
+      }
+    });
+  }
 
   // ==============================================================
-  // 6. Cidades – só aparece se tiver estado + checkbox ativado
+  // Estados
   // ==============================================================
-  DOM.filterSpecificCities.addEventListener("change", () => {
-    DOM.citiesInputWrapper.classList.toggle("d-none", !DOM.filterSpecificCities.checked);
-    if (!DOM.filterSpecificCities.checked) {
-      selectedCities.clear();
+  setupAutocomplete({
+    inputEl: DOM.stateSearch,
+    suggestionsEl: DOM.stateSuggestions,
+    getCandidates: () => allStates,
+    isSelected: state => selectedStates.has(state),
+    getValue: state => state,
+    getLabel: state => state,
+    onSelect: state => {
+      selectedStates.add(state);
+      DOM.specificCitiesWrapper.classList.remove("d-none");
       renderChips();
     }
   });
 
-  DOM.citySearch.addEventListener("input", async () => {
-    const term = DOM.citySearch.value.trim().toLowerCase();
-    DOM.citySuggestions.innerHTML = "";
-
-    if (!term || selectedStates.size === 0) {
-      DOM.citySuggestions.classList.add("d-none");
-      return;
+  // ==============================================================
+  // Cidades
+  // ==============================================================
+  setupAutocomplete({
+    inputEl: DOM.citySearch,
+    suggestionsEl: DOM.citySuggestions,
+    getCandidates: async () => {
+      if (selectedStates.size === 0) return [];
+      const statesArray = Array.from(selectedStates);
+      const citiesMap = await getCitiesForStates(statesArray);
+      return statesArray.flatMap(state => citiesMap[state] || []);
+    },
+    isSelected: city => selectedCities.has(city),
+    getValue: city => city,
+    getLabel: city => city,
+    maxSuggestions: 12,
+    onSelect: city => {
+      selectedCities.add(city);
+      renderChips();
     }
-
-    const statesArray = Array.from(selectedStates);
-    const citiesMap = await getCitiesForStates(statesArray);
-    
-    const available = [];
-    statesArray.forEach(state => {
-      const list = citiesMap[state] || [];
-      available.push(...list.filter(c => !selectedCities.has(c)));
-    });
-
-    const filtered = available
-      .filter(c => c.toLowerCase().includes(term))
-      .slice(0, 12);
-
-    if (filtered.length === 0) {
-      DOM.citySuggestions.classList.add("d-none");
-      return;
-    }
-
-    filtered.forEach(city => {
-      const div = document.createElement("div");
-      div.textContent = city;
-      div.onclick = () => {
-        selectedCities.add(city);
-        DOM.citySearch.value = "";
-        DOM.citySuggestions.classList.add("d-none");
-        renderChips();
-      };
-      DOM.citySuggestions.appendChild(div);
-    });
-
-    DOM.citySuggestions.classList.remove("d-none");
   });
 
   // ==============================================================
-  // 7. Remover chip
+  // Categorias (chip-based)
+  // ==============================================================
+  // Categorias
+  setupAutocomplete({
+    inputEl: DOM.categorySearch,
+    suggestionsEl: DOM.categorySuggestions,
+    getCandidates: () => allCategories,
+    isSelected: cat => selectedCategories.has(cat.id),
+    getValue: cat => cat.id,
+    getLabel: cat => cat.name,
+    onSelect: cat => {
+      selectedCategories.add(cat.id);
+      renderChips();
+    }
+  });
+  // ==============================================================
+  // Remover chip
   // ==============================================================
   document.addEventListener("click", e => {
     const btn = e.target.closest("button[data-type]");
@@ -215,40 +281,39 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     } else if (type === "city") {
       selectedCities.delete(value);
+    } else if (type === "category") {
+      selectedCategories.delete(value);
     }
-
     renderChips();
   });
 
   // ==============================================================
-  // 8. Filtros atuais
+  // Filtros atuais
   // ==============================================================
   function getCurrentFilters() {
     const types = ["free", "pay", "paid_to_take"]
       .filter(t => document.getElementById(`type-${t}`)?.checked)
       .join(",");
 
-    const catChecks = DOM.categoriesContainer.querySelectorAll("input[type=checkbox]:checked");
-    const categories = Array.from(catChecks).map(c => c.value);
-
+    const search = DOM.searchInput?.value.trim() || undefined;
     const isNationwide = DOM.nationwide.checked;
-
     const states = isNationwide ? [] : Array.from(selectedStates);
     const cities = isNationwide || !DOM.filterSpecificCities.checked ? [] : Array.from(selectedCities);
+    const categories = Array.from(selectedCategories);
 
-    return { types, categories, states, cities };
+    return { search, types, categories, states, cities };
   }
 
   // ==============================================================
-  // 9. Busca + Renderização
+  // Busca + Render
   // ==============================================================
   async function fetchAndRender(page = 1) {
     showLoading();
     currentPage = page;
-
-    const { types, categories, states, cities } = getCurrentFilters();
+    const { search, types, categories, states, cities } = getCurrentFilters();
 
     const result = await listItems({
+      search,
       offer_type: types || undefined,
       categories: categories.length ? categories : undefined,
       states: states.length ? states : undefined,
@@ -257,10 +322,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       page_size: 20,
     });
 
-    DOM.resultsInfo.textContent = `${result.total_items || 0} ite${result.total_items === 1 ? "m" : "ms"}`;
+    DOM.resultsInfo.textContent = `${result.total_items || 0} item${result.total_items === 1 ? "" : "ns"}`;
     DOM.grid.innerHTML = "";
     (result.items || []).forEach(item => {
-      DOM.grid.insertAdjacentHTML("beforeend", renderItemCard(item, currentUser, false, item.existing_offer_id || 0));
+      const userOfferId = userOfferIdByItemId[item.id] || 0;
+      DOM.grid.insertAdjacentHTML(
+        "beforeend",
+        renderItemCard(item, currentUser, false, userOfferId));
     });
     renderPagination(result.total_pages || 1, page);
     hideLoading();
@@ -287,25 +355,33 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ==============================================================
-  // 10. Eventos gerais
+  // Eventos
   // ==============================================================
-  DOM.form.addEventListener("submit", e => {
+  DOM.applyFiltersBtn.addEventListener("click", e => {
     e.preventDefault();
+    fetchAndRender(1);
+  });
+
+  DOM.applyMobileBtn.addEventListener("click", () => {
+    const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById("mobileFilters"))
+                   || new bootstrap.Offcanvas(document.getElementById("mobileFilters"));
+    offcanvas.hide();
     fetchAndRender(1);
   });
 
   DOM.sortSelect.addEventListener("change", () => fetchAndRender(currentPage));
 
-  document.getElementById("clear-filters").addEventListener("click", () => {
-    DOM.form.reset();
-    DOM.nationwide.checked = false;
-    selectedStates.clear();
-    selectedCities.clear();
-    DOM.filterSpecificCities.checked = false;
-    DOM.citiesInputWrapper.classList.add("d-none");
-    DOM.specificCitiesWrapper.classList.add("d-none");
+  DOM.clearFiltersBtn.addEventListener("click", () => {
+    document.querySelectorAll("input[type=checkbox]").forEach(cb => cb.checked = false);
+    DOM.searchInput.value = "";
     DOM.stateSearch.value = "";
     DOM.citySearch.value = "";
+    DOM.categorySearch.value = "";
+    selectedStates.clear();
+    selectedCities.clear();
+    selectedCategories.clear();
+    DOM.specificCitiesWrapper.classList.add("d-none");
+    DOM.citiesInputWrapper.classList.add("d-none");
     renderChips();
     fetchAndRender(1);
   });
@@ -320,7 +396,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Todo o Brasil limpa tudo
   DOM.nationwide.addEventListener("change", () => {
     if (DOM.nationwide.checked) {
       selectedStates.clear();
@@ -333,82 +408,40 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // ==============================================================
-  // 11. Mobile Offcanvas
-  // ==============================================================
-  const sidebar = document.querySelector("#filters-sidebar .bg-white") || document.querySelector("#filters-sidebar");
-  if (sidebar && DOM.mobileContent) {
-    DOM.mobileContent.innerHTML = sidebar.innerHTML;
-  }
-
-  DOM.applyMobile.addEventListener("click", () => {
-    const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById("mobileFilters"))
-                   || new bootstrap.Offcanvas(document.getElementById("mobileFilters"));
-    offcanvas.hide();
-    fetchAndRender(1);
-  });
-
-  // ==============================================================
-  // 12. Primeira carga
-  // ==============================================================
-  fetchAndRender(1);
-
-  // ==============================================================
-  // 13. Event Delegation para os botões dos cards (dentro do grid)
+  // Card Actions
   // ==============================================================
   DOM.grid.addEventListener("click", async e => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
-
     const { action, id, offerId } = btn.dataset;
-
-    // Evita ações em cards que ainda estão carregando ou foram removidos
     if (!id) return;
 
     switch (action) {
-      case "view":
-        window.location.href = `itemDetails.html?mode=view&id=${id}`;
-        break;
-
-      case "edit":
-        window.location.href = `itemDetails.html?mode=edit&id=${id}`;
-        break;
-
+      case "view": location.href = `itemDetails.html?mode=view&id=${id}`; break;
+      case "edit": location.href = `itemDetails.html?mode=edit&id=${id}`; break;
       case "delete":
         if (confirm("Tem certeza que quer excluir este anúncio?")) {
           try {
-            await deleteItem(id); // você já tem essa função importada em outro lugar? se não, importa!
+            await deleteItem(id);
             document.querySelector(`[data-item-id="${id}"]`)?.closest(".col")?.remove();
-            // Opcional: atualiza contador
-            const currentCount = parseInt(DOM.resultsInfo.textContent.match(/\d+/)?.[0] || 0);
-            DOM.resultsInfo.textContent = `${currentCount - 1} item${currentCount - 1 === 1 ? "" : "ns"}`;
           } catch (err) {
-            console.error(err);
-            alert("Erro ao excluir o anúncio. Tente novamente.");
+            alert("Erro ao excluir.");
           }
         }
         break;
-
-      case "view-offers":
-        openViewOffersModal(id);
-        break;
-
-      case "make-offer":
-        openOfferDetailsModal(id, null);
-        break;
-
+      case "view-offers": openViewOffersModal(id); break;
+      case "make-offer": openOfferDetailsModal(id, null); break;
       case "edit-offer":
-        try {
-          const offers = await getOffersForItem(id); // você tem essa função? se não, importa!
-          const existing = offers.find(o => String(o.id) === String(offerId));
-          openOfferDetailsModal(id, existing);
-        } catch (err) {
-          console.error(err);
-          alert("Erro ao carregar proposta.");
-        }
+        const offers = await getOffersForItem(id);
+        const existing = offers.find(o => String(o.id) === String(offerId));
+        openOfferDetailsModal(id, existing);
         break;
-
-      default:
-        console.warn("Ação não reconhecida:", action);
     }
   });
+
+  // ==============================================================
+  // Primeira carga
+  // ==============================================================
+  await loadUserOffersMap();
+  fetchAndRender(1);
 });
