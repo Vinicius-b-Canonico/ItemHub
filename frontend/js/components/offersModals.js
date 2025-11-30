@@ -231,7 +231,6 @@ export async function openOfferDetailsModal(itemId, existingOffer = null) {
 
   const item = await getItem(itemId);
   const allowedType = item.offer_type;
-  console.log("allowed type is ", allowedType);
   // Reset visibility
   [optionPay, optionFree, optionPaidToTake].forEach(el => {
     el.parentElement.classList.remove("d-none");
@@ -242,7 +241,6 @@ export async function openOfferDetailsModal(itemId, existingOffer = null) {
     free: allowedType === "free" || allowedType === "paid_to_take",
     paid_to_take: allowedType === "paid_to_take"
   };
-  console.log("allowed refined is ", allowed);
 
   if (!allowed.pay) optionPay.parentElement.classList.add("d-none");
   if (!allowed.free) optionFree.parentElement.classList.add("d-none");

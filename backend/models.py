@@ -104,14 +104,14 @@ class Item(db.Model):
         return self.created_at + timedelta(days=self.duration_days)
 
     def is_expired(self):
-        return datetime.utcnow() >= self.expires_at
+        return datetime.now() >= self.expires_at
 
     @hybrid_property
     def is_valid(self):
         """Python version used after objects are loaded."""
         return (
             self.status in ["pendendo_confirmacao", "ativo"]
-            and datetime.utcnow() < self.created_at + timedelta(days=self.duration_days)
+            and datetime.now() < self.created_at + timedelta(days=self.duration_days)
         )
 
     @is_valid.expression

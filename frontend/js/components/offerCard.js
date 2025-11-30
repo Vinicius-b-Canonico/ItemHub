@@ -30,7 +30,7 @@ export function renderOfferCard(offer, item, currentUser, mode = "owner-view") {
   const priceText = offer.price > 0
     ? `R$ ${formattedPrice}`
     : offer.price < 0
-    ? `R$ ${formattedPrice} (pago pra levar)`
+    ? `R$ ${formattedPrice} (você é pago pra levar)`
     : "Grátis";
 
   // Botões apenas no modo "offer-maker-view"

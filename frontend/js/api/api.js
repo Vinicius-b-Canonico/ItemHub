@@ -1,6 +1,6 @@
 import { showErrorModal } from "../components/resultModals.js";
 
-const VERBOSE = true; // 🔧 toggle debugging here
+const VERBOSE = false;
 export const API_BASE_URL = "http://localhost:5887/api"; // adjust if needed
 
 function v(...args) {
@@ -12,17 +12,16 @@ function v(...args) {
 // Centralized error handling
 // -------------------------------
 function handleCommonApiErrors(err) {
-  console.log("🔍 [handleCommonApiErrors] START");
-  console.log("   → Raw error object:", err);
+  v("🔍 [handleCommonApiErrors] START");
+  v("   → Raw error object:", err);
 
   const msg = err?.message || "Unknown error";
-  console.log("   → Extracted message:", msg);
-
+  v("   → Extracted message:", msg);
   // Log message prefix matching
-  console.log("   → Checking error type...");
+  v("   → Checking error type...");
 
   if (msg.startsWith("400")) {
-    console.log("   → Matched 400 Bad Request");
+    v("   → Matched 400 Bad Request");
     if (msg.includes("Offer is not pending confirmation")) {
       showErrorModal({
         title: "Offer is not pending confirmation",
@@ -78,7 +77,7 @@ function handleCommonApiErrors(err) {
     return;
   }
   else if (msg.startsWith("401")) {
-    console.log("   → Matched 401 Unauthorized");
+    v("   → Matched 401 Unauthorized");
     if (msg.includes("Invalid credentials"))
     {
       showErrorModal({
@@ -97,11 +96,11 @@ function handleCommonApiErrors(err) {
     }
     
    
-    console.log("   → Error modal displayed for 401");
+    v("   → Error modal displayed for 401");
     return;
   }
   else if (msg.startsWith("403")) {
-    console.log("   → Matched 403 Forbidden");
+    v("   → Matched 403 Forbidden");
     if (msg.includes("You are not part of this negotiation")) {
       showErrorModal({
         title: "Not Allowed",
@@ -124,11 +123,11 @@ function handleCommonApiErrors(err) {
       return;
     }
     showErrorModal({title:"Unauthorized",message: "You don't have permission to perform this action."});
-    console.log("   → Error modal displayed for 403");
+    v("   → Error modal displayed for 403");
     return;
   }
   else if (msg.startsWith("404")) {
-    console.log("   → Matched 404 Not Found");
+    v("   → Matched 404 Not Found");
 
     if (msg.includes("Offer not found")) {
       showErrorModal({
@@ -151,7 +150,7 @@ function handleCommonApiErrors(err) {
     return;
   }
   else if (msg.startsWith("409")) {
-    console.log("   → Matched 409 Conflict");
+    v("   → Matched 409 Conflict");
 
     if (msg.includes("Offer cannot be edited")) {
       showErrorModal({
@@ -188,24 +187,24 @@ function handleCommonApiErrors(err) {
     return;
   }
   else if (msg.startsWith("500")) {
-    console.log("   → Matched 500 Server Error");
+    v("   → Matched 500 Server Error");
     showErrorModal({title: "Server Error",message: "The server encountered a problem. Try again later."});
-    console.log("   → Error modal displayed for 500");
+    v("   → Error modal displayed for 500");
     return;
   }
   else if (msg.startsWith("TypeError")) {
-    console.log("   → Matched TypeError (likely fetch/network issue)");
+    v("   → Matched TypeError (likely fetch/network issue)");
     showErrorModal({title: "Network Error",message: "Connection failed. Check your internet or server status."});
-    console.log("   → Error modal displayed for network failure");
+    v("   → Error modal displayed for network failure");
     return;
   }
 
   // fallback
-  console.log("   → No known type matched. Using fallback handler.");
+  v("   → No known type matched. Using fallback handler.");
   showErrorModal({title: "Error", message: msg});
-  console.log("   → Fallback error modal displayed.");
+  v("   → Fallback error modal displayed.");
 
-  console.log("🔍 [handleCommonApiErrors] END");
+  v("🔍 [handleCommonApiErrors] END");
 }
 
 // -------------------------------

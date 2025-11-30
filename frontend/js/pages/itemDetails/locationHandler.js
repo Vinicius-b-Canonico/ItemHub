@@ -60,26 +60,19 @@ async function loadCitiesForState(state) {
   cityInput.placeholder = "Carregando cidades...";
 
   try {
-    console.log("testbb1");
     if (!allCitiesByState[state]) {
       allCitiesByState[state] = await getCities(state);
     }
-    console.log("testbb2 allCitiesByState[state] is", allCitiesByState[state]);
 
     cityInput.disabled = false;
-    console.log("testbb3");
 
     cityInput.placeholder = "Digite o nome da cidade...";
-    console.log("testbb4");
 
     cityInput.focus();
-    console.log("testbb5");
 
     setupCityAutocomplete(state);
-    console.log("testbb6");
 
   } catch (err) {
-    console.log("testbb_error ", err.message);
 
     helpers.showAlert("danger", `Erro ao carregar cidades de ${state}.`);
     cityInput.placeholder = "Erro ao carregar";
@@ -98,7 +91,6 @@ function setupCityAutocomplete(state) {
   const handler = () => {
     const query = cityInput.value.trim().toLowerCase();
     if (!query) return hideSuggestions(citySuggestions);
-    console.log("allCitiesByState[state]  ", allCitiesByState[state]);
     const matches = (allCitiesByState[state] || [])
       .filter(c => c.toLowerCase().includes(query))
       .slice(0, 8);

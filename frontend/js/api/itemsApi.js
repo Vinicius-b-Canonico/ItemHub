@@ -3,7 +3,7 @@ import { apiRequest, apiFormRequest, apiGet } from "./api.js";
 // ======================================================
 // 🔧 Verbose Logging Control
 // ======================================================
-const VERBOSE = true;
+const VERBOSE = false;
 
 function v(...args) {
   if (VERBOSE) console.log("[ITEMS API DEBUG]", ...args);

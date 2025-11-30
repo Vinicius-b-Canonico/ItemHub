@@ -1,7 +1,7 @@
 // js/api/locationsApi.js
 import { apiGet } from "./api.js";
 
-const VERBOSE = true;
+const VERBOSE = false;
 function v(...args) {
   if (VERBOSE) console.log("[LOCATIONS API DEBUG]", ...args);
 }

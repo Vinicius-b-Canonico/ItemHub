@@ -1,6 +1,6 @@
 import { loginUser, getCurrentUser } from "../api/authApi.js";
 import { loadNavbar } from "../components/navbar.js";
-import { showSuccessModal } from "../components/resultModals.js"; // ← NEW import
+import { showSuccessModal } from "../components/resultModals.js"; 
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadNavbar();

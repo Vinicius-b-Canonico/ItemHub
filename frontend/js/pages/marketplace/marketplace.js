@@ -322,7 +322,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       page_size: 20,
     });
 
-    DOM.resultsInfo.textContent = `${result.total_items || 0} item${result.total_items === 1 ? "" : "ns"}`;
+    DOM.resultsInfo.textContent = `${result.total_items || 0} ite${result.total_items === 1 ? "m" : "ns"}`;
     DOM.grid.innerHTML = "";
     (result.items || []).forEach(item => {
       const userOfferId = userOfferIdByItemId[item.id] || 0;

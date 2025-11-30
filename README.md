@@ -72,7 +72,7 @@ Notas de desenvolvimento
 
 - Uploads são armazenados em uploads (mapeado no docker-compose.yml).
 - Configurações de ambiente estão em .env e parte delas é carregada por config.py.
-- O servidor no container backend usa Gunicorn conforme Dockerfile.
+- O servidor no container backend usa Gunicorn conforme docker-compose.
 
 Contato / créditos
 - Projeto feito em menos de 1 mês.
