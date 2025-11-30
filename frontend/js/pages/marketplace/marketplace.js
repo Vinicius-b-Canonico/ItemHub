@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     sortSelect: document.getElementById("sort-select"),
     applyFiltersBtn: document.querySelector("#filters-form button[type='submit']"),
     clearFiltersBtn: document.getElementById("clear-filters"),
-    applyMobileBtn: document.getElementById("apply-mobile-filters"),
+    //applyMobileBtn: document.getElementById("apply-mobile-filters"),
 
     // Filtros
     searchInput: document.getElementById("search-input"),
@@ -238,11 +238,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     isSelected: city => selectedCities.has(city),
     getValue: city => city,
     getLabel: city => city,
-    maxSuggestions: 12,
+    maxSuggestions: 100,
     onSelect: city => {
       selectedCities.add(city);
       renderChips();
     }
+  });
+
+  DOM.filterSpecificCities.addEventListener("change", () => {
+    DOM.citiesInputWrapper.classList.toggle("d-none", !DOM.filterSpecificCities.checked);
+    if (!DOM.filterSpecificCities.checked) selectedCities.clear();
+    renderChips();
   });
 
   // ==============================================================
@@ -256,6 +262,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     isSelected: cat => selectedCategories.has(cat.id),
     getValue: cat => cat.id,
     getLabel: cat => cat.name,
+    maxSuggestions: 100,
     onSelect: cat => {
       selectedCategories.add(cat.id);
       renderChips();
@@ -362,12 +369,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     fetchAndRender(1);
   });
 
-  DOM.applyMobileBtn.addEventListener("click", () => {
-    const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById("mobileFilters"))
-                   || new bootstrap.Offcanvas(document.getElementById("mobileFilters"));
-    offcanvas.hide();
-    fetchAndRender(1);
-  });
+  //DOM.applyMobileBtn.addEventListener("click", () => {
+  //  const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById("mobileFilters"))
+  //                 || new bootstrap.Offcanvas(document.getElementById("mobileFilters"));
+  //  offcanvas.hide();
+  //  fetchAndRender(1);
+  //});
 
   DOM.sortSelect.addEventListener("change", () => fetchAndRender(currentPage));
 

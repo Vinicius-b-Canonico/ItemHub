@@ -32,13 +32,13 @@ services:
     command: >
       sh -c "
         echo 'Waiting for database...' &&
-        sleep 25 &&
+        sleep 15 &&
         echo 'Done Waiting for database...' &&
         flask db upgrade || (flask db init &&
         flask db migrate -m 'initial migration' &&
         flask db upgrade) &&
         flask seed &&
-        flask run --host=0.0.0.0 --port=5887
+        gunicorn -b 0.0.0.0:5887 -w 4 --access-logfile - 'app:create_app()'
       "
 
   frontend:

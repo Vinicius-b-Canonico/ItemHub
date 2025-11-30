@@ -23,9 +23,46 @@ FIRST_NAMES = ["Ana", "Bruno", "Carla", "Diego", "Eduarda", "Felipe", "Gabriela"
 LAST_NAMES = ["Silva", "Santos", "Oliveira", "Souza", "Costa", "Pereira", "Lima", "Ferreira", "Almeida", "Ribeiro"]
 
 CATEGORIES = [
-    "Móveis", "Eletrônicos", "Roupas", "Livros", "Brinquedos",
-    "Eletrodomésticos", "Decoração", "Esportes", "Jogos", "Beleza"
-]
+        "Eletrônicos",
+        "Informática",
+        "Celulares e Acessórios",
+        "Games",
+        "Eletrodomésticos",
+        "Móveis",
+        "Decoração",
+        "Roupas",
+        "Calçados",
+        "Acessórios de Moda",
+        "Esporte e Lazer",
+        "Livros",
+        "Papelaria",
+        "Ferramentas",
+        "Construção",
+        "Automotivo",
+        "Bebês e Infantil",
+        "Brinquedos",
+        "Pet Shop",
+        "Saúde e Beleza",
+        "Perfumaria",
+        "Cozinha",
+        "Alimentos e Bebidas",
+        "Jardinagem",
+        "Colecionáveis",
+        "Instrumentos Musicais",
+        "Arte e Artesanato",
+        "Fotografia",
+        "Som e Áudio",
+        "Filmes e Séries",
+        "Casa Inteligente",
+        "Camping e Aventura",
+        "Relógios",
+        "Joias",
+        "Puzzles e Board Games",
+        "Papelaria e Escritório",
+        "Outros"
+    ]
+
+
 
 VALID_LOCATIONS = {
     "São Paulo": ["São Paulo", "Campinas", "Santos", "Guarulhos", "Sorocaba", "Ribeirão Preto"],
@@ -56,8 +93,8 @@ TITLE_TO_IMAGE = {
     "cama": "cama-casal.jpg",
     "fritadeira": "fritadeira.jpg",
     "mesa": "mesa-jantar.jpg",
-    "Câmera": "camera-canon.jpg",
-    "Guarda-roupa": "guarda-roupa.jpg",
+    "canon": "camera-canon.jpg",
+    "guarda-roupa": "guarda-roupa.jpg",
     "entulho": "pilha-entulho.jpg",
 }
 

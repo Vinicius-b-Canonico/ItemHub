@@ -9,7 +9,7 @@ function v(...args) {
 
 
 // -------------------------------
-// Centralized error handling
+// Centralized error handling (PT-BR UI)
 // -------------------------------
 function handleCommonApiErrors(err) {
   v("🔍 [handleCommonApiErrors] START");
@@ -17,195 +17,245 @@ function handleCommonApiErrors(err) {
 
   const msg = err?.message || "Unknown error";
   v("   → Extracted message:", msg);
-  // Log message prefix matching
   v("   → Checking error type...");
 
+  // -------------------------------
+  // 400 Bad Request
+  // -------------------------------
   if (msg.startsWith("400")) {
     v("   → Matched 400 Bad Request");
+
     if (msg.includes("Offer is not pending confirmation")) {
       showErrorModal({
-        title: "Offer is not pending confirmation",
-        message: "Offer is not pending confirmation"
+        title: "Oferta não está pendente de confirmação",
+        message: "A oferta selecionada não está em estado de pendência."
       });
       return;
     }
 
-
     if (msg.includes("Offer is not active and thus cant be cancelled")) {
       showErrorModal({
-        title: "Cannot Cancel Offer",
-        message: "Only active offers can be cancelled."
+        title: "Não é possível cancelar a oferta",
+        message: "Apenas ofertas ativas podem ser canceladas."
       });
       return;
     }
 
     if (msg.includes("Item is not available for offers")) {
       showErrorModal({
-        title: "Item Unavailable",
-        message: "This item is not currently open for new offers."
+        title: "Item indisponível",
+        message: "Este item não está aceitando novas ofertas no momento."
       });
       return;
     }
 
     if (msg.includes("already made an offer")) {
       showErrorModal({
-        title: "Duplicate Offer",
-        message: "You have already made an active offer for this item."
+        title: "Oferta duplicada",
+        message: "Você já fez uma oferta ativa para este item."
       });
       return;
     }
 
-
     if (msg.includes("Invalid duration")) {
       showErrorModal({
-        title: "Invalid Duration",
-        message: "Duration must be one of: 1, 7, 15, or 30 days."
+        title: "Duração inválida",
+        message: "A duração deve ser uma das seguintes: 1, 7, 15 ou 30 dias."
       });
       return;
     }
 
     let specific = "";
     if (msg.includes("Missing required fields")) {
-      specific = "Please fill out all required fields before continuing.";
+      specific = "Por favor, preencha todos os campos obrigatórios antes de continuar.";
     }
 
     showErrorModal({
-      title: "Invalid Input",
-      message: specific || "Some information you entered is not valid."
+      title: "Entrada inválida",
+      message: specific || "Algumas informações fornecidas não são válidas."
     });
 
     return;
   }
+
+  // -------------------------------
+  // 401 Unauthorized
+  // -------------------------------
   else if (msg.startsWith("401")) {
     v("   → Matched 401 Unauthorized");
-    if (msg.includes("Invalid credentials"))
-    {
+
+    if (msg.includes("Invalid credentials")) {
       showErrorModal({
-      title: "Invalid Login",
-      message: "The username or password you entered is incorrect.",
+        title: "Login inválido",
+        message: "O nome de usuário ou senha está incorreto."
       });
-    }
-    else
-    {
+    } else {
       showErrorModal({
-        title: "Not Logged In",
-        message: "You need to log in to continue.",
-        actionText: "Go to Login",
+        title: "Não autenticado",
+        message: "Você precisa estar logado para continuar.",
+        actionText: "Ir para Login",
         actionHref: "/login.html"
       });
     }
-    
-   
+
     v("   → Error modal displayed for 401");
     return;
   }
+
+  // -------------------------------
+  // 403 Forbidden
+  // -------------------------------
   else if (msg.startsWith("403")) {
     v("   → Matched 403 Forbidden");
+
     if (msg.includes("You are not part of this negotiation")) {
       showErrorModal({
-        title: "Not Allowed",
-        message: "You are not part of this negotiation"
+        title: "Acesso negado",
+        message: "Você não faz parte desta negociação."
       });
       return;
     }
+
     if (msg.includes("You cannot make offers on your own item")) {
       showErrorModal({
-        title: "Not Allowed",
-        message: "You cannot place an offer on your own item."
+        title: "Ação não permitida",
+        message: "Você não pode fazer ofertas nos seus próprios itens."
       });
       return;
     }
+
     if (msg.includes("You can only cancel your own offers")) {
       showErrorModal({
-        title: "Not Allowed",
-        message: "You cannot cancel offers made by other users."
+        title: "Ação não permitida",
+        message: "Você só pode cancelar suas próprias ofertas."
       });
       return;
     }
-    showErrorModal({title:"Unauthorized",message: "You don't have permission to perform this action."});
+
+    showErrorModal({
+      title: "Acesso não autorizado",
+      message: "Você não tem permissão para realizar esta ação."
+    });
+
     v("   → Error modal displayed for 403");
     return;
   }
+
+  // -------------------------------
+  // 404 Not Found
+  // -------------------------------
   else if (msg.startsWith("404")) {
     v("   → Matched 404 Not Found");
 
     if (msg.includes("Offer not found")) {
       showErrorModal({
-        title: "Offer Not Found",
-        message: "The offer you are trying to access does not exist or may have been removed."
+        title: "Oferta não encontrada",
+        message: "A oferta que você está tentando acessar não existe ou foi removida."
       });
-    }
-    else if (msg.includes("item not found")) {
+    } else if (msg.includes("item not found")) {
       showErrorModal({
-        title: "Item Not Found",
-        message: "The item you are trying to access does not exist or may have been removed."
+        title: "Item não encontrado",
+        message: "O item que você está tentando acessar não existe ou foi removido."
       });
     } else {
       showErrorModal({
-        title: "Not Found",
-        message: "The requested resource does not exist."
+        title: "Não encontrado",
+        message: "O recurso solicitado não existe."
       });
     }
 
     return;
   }
+
+  // -------------------------------
+  // 409 Conflict
+  // -------------------------------
   else if (msg.startsWith("409")) {
     v("   → Matched 409 Conflict");
 
     if (msg.includes("Offer cannot be edited")) {
       showErrorModal({
-        title: "Offer cannot be edited",
-        message: "The offer you are trying to access cannot be edited"
+        title: "Oferta não pode ser editada",
+        message: "A oferta que você está tentando modificar não pode ser alterada."
       });
       return;
     }
+
     if (msg.includes("Item no longer accepts negotiation")) {
       showErrorModal({
-        title: "Item no longer accepts negotiation",
-        message: "The Item you are trying to access no longer accepts negotiation"
+        title: "Item não aceita mais negociações",
+        message: "O item não está mais aceitando negociações."
       });
       return;
     }
+
     let specific = "";
-    
     if (msg.includes("Username or email already taken")) {
-      specific = "This username or email is already in use. Try another.";
+      specific = "Este nome de usuário ou email já está em uso. Tente outro.";
     }
 
     showErrorModal({
-      title: "Account Conflict",
-      message: specific || "A conflict occurred with the data you entered."
+      title: "Conflito de conta",
+      message: specific || "Ocorreu um conflito com os dados fornecidos."
     });
 
     return;
   }
+
+  // -------------------------------
+  // 415 Unsupported Media Type
+  // -------------------------------
   else if (msg.startsWith("415")) {
     showErrorModal({
-      title: "Invalid Image",
-      message: "The selected file is not a supported image type."
+      title: "Imagem inválida",
+      message: "O arquivo selecionado não é um formato de imagem suportado."
     });
     return;
   }
+
+  // -------------------------------
+  // 500 Internal Server Error
+  // -------------------------------
   else if (msg.startsWith("500")) {
     v("   → Matched 500 Server Error");
-    showErrorModal({title: "Server Error",message: "The server encountered a problem. Try again later."});
+
+    showErrorModal({
+      title: "Erro no servidor",
+      message: "O servidor encontrou um problema. Tente novamente mais tarde."
+    });
+
     v("   → Error modal displayed for 500");
     return;
   }
+
+  // -------------------------------
+  // Network / TypeError
+  // -------------------------------
   else if (msg.startsWith("TypeError")) {
     v("   → Matched TypeError (likely fetch/network issue)");
-    showErrorModal({title: "Network Error",message: "Connection failed. Check your internet or server status."});
+
+    showErrorModal({
+      title: "Erro de conexão",
+      message: "Falha na conexão. Verifique sua internet ou o status do servidor."
+    });
+
     v("   → Error modal displayed for network failure");
     return;
   }
 
-  // fallback
+  // -------------------------------
+  // Fallback
+  // -------------------------------
   v("   → No known type matched. Using fallback handler.");
-  showErrorModal({title: "Error", message: msg});
-  v("   → Fallback error modal displayed.");
+  showErrorModal({
+    title: "Erro",
+    message: msg
+  });
 
+  v("   → Fallback error modal displayed.");
   v("🔍 [handleCommonApiErrors] END");
 }
+
 
 // -------------------------------
 // In-memory cache
