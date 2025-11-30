@@ -34,6 +34,7 @@ O que está implementado
 - Listagem paginada e filtros (categorias, estados, cidades, busca de texto) implementados no endpoint de items.  
 - Upload de imagens suportado (serve via rota de imagens em [backend/routes/item_routes.py](backend/routes/item_routes.py)).  
 - Dashboard/fluxos de propostas integrados no frontend (modais reutilizáveis em [frontend/js/components/offersModals.js](frontend/js/components/offersModals.js)).
+- Fluxos de login/registro/logout seguros com JWT em http-only cookies [backend/routes/auth_routes].  
 
 Páginas funcionais (frontend)
 - index — [frontend/index.html](frontend/index.html)  
@@ -45,17 +46,17 @@ Páginas funcionais (frontend)
 - dashboard — [frontend/dashboard.html](frontend/dashboard.html)  
 
 Observações / Limitações
-- A página de perfil está inteiramente mockada (não persiste alterações): [frontend/profile.html](frontend/profile.html).  
+- A página de perfil está inteiramente mockada (não persiste alterações): [frontend/profile.html](frontend/profile.html) e nao foi concluida.
 - Sistema de notificações também está mockado/no-ops.  
 - Fluxo de conclusão/enceramento de ofertas (workflow completo entre comprador/vendedor) ficou fora do escopo do protótipo por limitação de tempo — há endpoints de confirmação/declínio em [backend/routes/offer_routes.py](backend/routes/offer_routes.py), mas o fluxo completo pode necessitar de ajustes para produção.  
 - Nenhum teste automatizado foi incluído até o momento.
 - Nenhuma validação sistematica de parametros no backend
-- Ainda sem cache no backend
+- Ainda sem cache no backend (tem cache no front)
 
 
 
 Como rodar localmente
-1. Instale o Docker (e Docker Compose).  
+1. Instale o Docker.  
 2. Clone / baixe o repositório e abra um terminal na raiz do projeto.  
 3. Entre na pasta do backend:
    ```sh
@@ -66,6 +67,8 @@ Como rodar localmente
    docker compose up --build
    ```
    - O compose cria o serviço do banco (Postgres), o backend (Flask/Gunicorn) e serve o frontend via nginx conforme configuração.
+5. aguarde alguns minutos para o deploy automatico inicial ser concluido (pode ser necessario rodar novamente em caso de oscilação de conexao), serão criados varios containers, incluindo o banco de dados que sera populado com dados semi aleatorios, via [backend/seed.py]
+6. acesse o projeto em: http://localhost:8080/ , é possivel logar como usuario:teste senha:123456, bem como criar nova conta e fazer os fluxos normalmente.
 
 
 Notas de desenvolvimento
