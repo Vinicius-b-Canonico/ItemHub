@@ -38,7 +38,7 @@ services:
         flask db migrate -m 'initial migration' &&
         flask db upgrade) &&
         flask seed &&
-        gunicorn -b 0.0.0.0:5887 -w 1 --access-logfile - 'app:create_app()'
+        gunicorn -b 0.0.0.0:5887 -w 4 --access-logfile - 'app:create_app()'
       "
 
   frontend:
