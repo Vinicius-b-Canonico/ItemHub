@@ -4,6 +4,8 @@
 import os
 import random
 from datetime import datetime, timedelta
+
+from psycopg2 import OperationalError, ProgrammingError
 from app import create_app, db
 from models import User, Item, ItemImage, Offer
 from werkzeug.security import generate_password_hash
@@ -121,10 +123,15 @@ def seed_database(app):
         log("Dentro do app context")
 
         # Verifica se já tem dados
-        if Item.query.first() or User.query.first():
-            print("Banco já possui dados. Seed cancelado.")
+        try:
+            if Item.query.first() or User.query.first():
+                print("Banco já possui dados. Seed cancelado.")
+                return
+        except (OperationalError, ProgrammingError):
+            # Isso acontece quando as tabelas ainda não existem
+            print("Tabelas ainda não existem — seed deve parar por enquanto.")
             return
-
+            
         print("Iniciando seed com usuário fixo e imagens coerentes...")
 
         # ====================
