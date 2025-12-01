@@ -11,10 +11,11 @@ __pycache__/*
 # Alembic migrations 
 backend/migrations/*
 backend/migrations/
-# Alembic migrations 
-backend/uploads/*
-backend/uploads/
 # commented out to allow easier initial setup from this github repo, as this will never reach production.
+
+# uploads
+# backend/uploads/*
+# backend/uploads/
 # Environment files
 #.env
 #*.env
