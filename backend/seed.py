@@ -10,11 +10,7 @@ from app import create_app, db
 from models import User, Item, ItemImage, Offer
 from werkzeug.security import generate_password_hash
 
-# Toggle debug (mude pra True se quiser ver tudo)
-DEBUG = os.getenv("SEED_DEBUG", "false").lower() == "true"
-def log(msg): 
-    if DEBUG: 
-        print(f"[DEBUG] {msg}")
+
 
 print("[SEED] Iniciando seed.py atualizado (com usuário fixo + imagens coerentes)")
 
@@ -118,9 +114,9 @@ TITLES = {
 }
 
 def seed_database(app):
-    log("Entrou em seed_database()")
+    print("Entrou em seed_database()")
     with app.app_context():
-        log("Dentro do app context")
+        print("Dentro do app context")
 
         # Verifica se já tem dados
         try:

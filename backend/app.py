@@ -41,14 +41,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)  # ✅ initialize JWT with the app
-    # ========================
-    # AUTO-SEED: só roda logo antes do primeiro requeste
-    # ========================
-    #@app.before_first_request
-    #def run_seed_if_empty():
-    #    from seed import seed_database
-    #    seed_database(app)
-    # Register Blueprints
+
     from routes.auth_routes import auth_bp
     from routes.item_routes import item_bp
     from routes.offer_routes import offer_bp
