@@ -34,7 +34,7 @@ O que está implementado
 - Listagem paginada e filtros (categorias, estados, cidades, busca de texto) implementados no endpoint de items.  
 - Upload de imagens suportado (serve via rota de imagens em [backend/routes/item_routes.py](backend/routes/item_routes.py)).  
 - Dashboard/fluxos de propostas integrados no frontend (modais reutilizáveis em [frontend/js/components/offersModals.js](frontend/js/components/offersModals.js)).
-- Fluxos de login/registro/logout seguros com JWT em http-only cookies [backend/routes/auth_routes].  
+- Fluxos de login/registro/logout seguros com JWT em http-only cookies [backend/routes/auth_routes.py].  
 
 Páginas funcionais (frontend)
 - index — [frontend/index.html](frontend/index.html)  
